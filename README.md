@@ -2,7 +2,18 @@
 
 Serveur MCP local pour piloter **Adobe Premiere Pro** et **After Effects** depuis n'importe quel client MCP (assistant IA en ligne de commande ou application de bureau), sans serveur tiers, sans abonnement, sans code distant.
 
-> Statut : **phase 0 — spécification**. Le code arrive dans les phases suivantes (voir `docs/05-roadmap.md`).
+> Statut : **phase 1 (spike)** — serveur MCP sans dépendance, panneau Premiere Pro / After Effects, installeur Windows, 20 tools (lecture de projet et de séquence, coupes avec sauvegarde automatique, import, export d'image, retour arrière). Voir `docs/05-roadmap.md` pour la suite.
+
+## Démarrage rapide (Windows)
+
+Prérequis : [Node.js](https://nodejs.org) 18 ou plus, Premiere Pro et/ou After Effects (2018 ou plus récent), un client MCP.
+
+1. Récupérer le dépôt : `git clone https://github.com/Ealemun/adobe-mcp` (ou télécharger le zip et le décompresser).
+2. Double-cliquer sur `scripts\install.cmd`. Sans droits administrateur, il autorise les panneaux non signés, installe le panneau, déclare le serveur dans les clients MCP détectés et lance un test.
+3. Ouvrir Premiere Pro → **Fenêtre > Extensions > Adobe MCP**. Le panneau affiche « Connecté » dès que le client MCP a démarré le serveur.
+4. Dans le client MCP : « Quelles sont tes capacités Premiere ? ».
+
+Désinstallation : `scripts\uninstall.cmd`. Détails et dépannage : `docs/00-guide-utilisateur.md`.
 
 ## Pourquoi
 

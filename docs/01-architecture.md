@@ -5,7 +5,7 @@
 ```
 ┌──────────────┐  MCP (stdio/JSON-RPC)  ┌─────────────────────────────┐
 │ Agent IA     │◀──────────────────────▶│ packages/mcp-server (Node)  │
-│ (client MCP) │                        │  • tools MCP (zod)          │
+│ (client MCP) │                        │  • tools MCP (JSON Schema)  │
 └──────────────┘                        │  • bridge: serveur WS       │
                                         │  • safety: checkpoints, log │
                                         │  • media: appel des workers │
@@ -36,22 +36,22 @@ L'agent IA (le client MCP) est le seul décideur. Il voit la timeline sous forme
 ## 2. Choix techniques
 
 ### 2.1 Serveur MCP — Node.js / TypeScript
-- SDK officiel `@modelcontextprotocol/sdk`, transport stdio (lancement par le client MCP via son fichier de configuration, ex. `.mcp.json`). Option HTTP streamable pour un usage distant plus tard.
-- Schémas d'entrée en zod ; chaque tool a une description longue orientée « comment l'agent doit l'utiliser » et des exemples.
-- Serveur WebSocket (`ws`) sur `127.0.0.1`, port configurable (défaut 8765), **token aléatoire** généré au démarrage, écrit dans `~/.adobe-mcp/bridge.json` que le panneau lit. Rien n'écoute sur le réseau.
+- **Sans dépendance** (Node ≥ 18 suffit, pas de `npm install`) : MCP sur stdio (JSON-RPC, `src/mcp.js`) et serveur WebSocket RFC 6455 (`src/bridge/ws.js`) sont implémentés dans le dépôt. Lancement par le client MCP via son fichier de configuration. Option HTTP streamable pour un usage distant plus tard.
+- Schémas d'entrée en JSON Schema ; chaque tool a une description orientée « comment l'agent doit l'utiliser », des annotations (readOnly/destructive) et `dryRun` pour les opérations destructives.
+- Serveur WebSocket sur `127.0.0.1`, port configurable (défaut 8765, port libre sinon), **token aléatoire** généré au démarrage, écrit dans `bridge.json` (`%APPDATA%\adobe-mcp` sous Windows, `~/Library/Application Support/adobe-mcp` sous macOS : l'emplacement que le panneau sait lire). Rien n'écoute sur le réseau.
 - Registre des hôtes connectés : `{app: "ppro"|"aeft", version, pid, capabilities[]}`. Les tools `ppro_*` sont routés vers l'hôte Premiere, `aeft_*` vers After Effects. Si l'hôte n'est pas connecté, le tool répond avec une consigne claire (« ouvrez le panneau Window > Extensions > Adobe MCP »).
 - Journal structuré de chaque appel (`~/.adobe-mcp/logs/`), jamais envoyé nulle part.
 
-### 2.2 Pont CEP — Bolt CEP (Hyperbrew)
+### 2.2 Pont CEP — panneau sans framework
 - Un seul panneau déclarant deux hôtes dans `manifest.xml` :
   ```xml
   <Host Name="PPRO" Version="[12.0,99.9]" />
   <Host Name="AEFT" Version="[15.0,99.9]" />
   ```
-  Bornes ouvertes pour ne pas être bloqué par les futures versions. `RequiredRuntime CSXS 9.0` (CEP 9 = 2019 ; CEP 11/12 pour les versions récentes, rétrocompatible).
-- `--enable-nodejs` **uniquement** pour lire `bridge.json` et ouvrir le WebSocket ; aucune exécution de code reçu par le réseau côté JS. Le JS ne fait qu'appeler `evalScript("ADOBE_MCP.call(" + JSON.stringify({fn,args}) + ")")`. Toute fonction appelable est **dans le dépôt**, versionnée, auditable.
-- UI du panneau : état de connexion, hôte détecté, dernières commandes, bouton « reconnecter ». Rien d'autre.
-- Bibliothèque ExtendScript compilée depuis TypeScript (types `types-for-adobe`) vers un seul `.jsx` par hôte, avec `json2.js` embarqué (ExtendScript n'a pas `JSON` natif).
+  Bornes ouvertes pour ne pas être bloqué par les futures versions. `RequiredRuntime CSXS 9.0` (compatible CEP 9 à 12, soit Premiere/After Effects 2019 et suivants ; CEP 8 pour 2018 en abaissant cette valeur).
+- **Pas de Node.js dans le panneau** : il lit `bridge.json` via `cep.fs` et parle au serveur en WebSocket natif. Le JS ne fait qu'appeler `evalScript("ADOBE_MCP.call(<json>)")`. Toute fonction appelable est **dans le dépôt** (`jsx/ppro.jsx`, `jsx/aeft.jsx`), versionnée, auditable ; aucun code reçu par le réseau n'est exécuté.
+- UI du panneau : état de connexion, hôte détecté, journal des appels, bouton « Reconnecter », port modifiable. Rien d'autre.
+- Bibliothèque ExtendScript écrite directement en ES3 (pas de chaîne de build) ; `json2.js` embarqué car ExtendScript n'a pas `JSON` natif. Un passage à TypeScript (`types-for-adobe`, Bolt CEP) reste possible plus tard si la lib grossit.
 
 ### 2.3 Pont UXP (phase 5)
 - Même protocole WebSocket (UXP dispose de `WebSocket` natif). Les primitives sont réécrites sur l'API UXP de Premiere (`require("premierepro")`), fonction par fonction, derrière la même interface `{fn, args}`. Un hôte UXP s'enregistre avec `capabilities` listant les `fn` disponibles ; le serveur MCP préfère UXP quand la fonction y existe, sinon CEP (plugin hybride possible pendant la transition).

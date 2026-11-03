@@ -17,14 +17,14 @@ L'assistant lit votre timeline, vous annonce ce qu'il va faire, le fait, puis vo
 
 Prérequis : Windows 10/11 ou macOS, Premiere Pro et/ou After Effects (2018 ou plus récent), Node.js 20+, et un client MCP (assistant IA en ligne de commande ou application de bureau compatible MCP).
 
-1. Télécharger la dernière release (`adobe-mcp-<version>.zip`) et la décompresser où vous voulez (par exemple `Documents\adobe-mcp`).
+1. Récupérer le dépôt (`git clone https://github.com/Ealemun/adobe-mcp`, ou le zip décompressé) où vous voulez, par exemple `Documents\adobe-mcp`. Ne le déplacez plus ensuite : le panneau pointe dessus.
 2. Lancer l'installeur :
-   - Windows : double-clic sur `install.cmd` (ou `scripts\install.ps1` dans PowerShell).
-   - macOS : `./scripts/install.sh` dans le Terminal.
+   - Windows : double-clic sur `scripts\install.cmd`.
+   - macOS : `./scripts/install.sh` dans le Terminal *(à venir, phase 6 ; étapes manuelles dans `docs/06-installation-dev.md`)*.
 
    L'installeur fait trois choses, et les affiche : il autorise Adobe à charger le panneau, il installe le panneau « Adobe MCP » dans vos extensions, et il enregistre le serveur `adobe` dans la configuration de votre client MCP. Aucune étape ne demande de droits administrateur.
 3. Ouvrir Premiere Pro → menu **Fenêtre > Extensions > Adobe MCP**. Le panneau affiche « Connecté ». Vous pouvez le réduire ou l'ancrer n'importe où ; il doit juste rester ouvert.
-4. Ouvrir votre client MCP et taper : « Quelles sont tes capacités Premiere ? » S'il répond avec la version de Premiere et une liste de fonctions, tout est en place.
+4. Ouvrir votre client MCP et taper : « Quelles sont tes capacités Premiere ? » S'il répond avec la version de Premiere et une liste de fonctions, tout est en place. Le serveur est lancé par le client MCP ; le panneau se reconnecte tout seul toutes les 3 s.
 
 Pour l'analyse audio (transcription, silences, séparation de pistes) *(phase 3)* : relancer l'installeur avec l'option `--workers`, qui installe Python et les modèles nécessaires (environ 2 Go, une seule fois).
 
@@ -75,4 +75,4 @@ Réglages dans `~/.adobe-mcp/config.json` : demander confirmation toujours / par
 
 ## 7. Désinstallation
 
-`scripts/uninstall` (ou relancer l'installeur avec `--remove`) : retire le panneau, l'entrée du client MCP et, sur demande, le dossier `~/.adobe-mcp`. Les sauvegardes de séquences restent dans vos projets Premiere ; supprimez le chutier `_adobe-mcp` si vous n'en voulez plus.
+`scripts\uninstall.cmd` (ou `install.ps1 -Remove`, `-Purge` pour supprimer aussi `~/.adobe-mcp`) : retire le panneau, l'entrée du client MCP et, sur demande, le dossier `~/.adobe-mcp`. Les sauvegardes de séquences restent dans vos projets Premiere ; supprimez le chutier `_adobe-mcp` si vous n'en voulez plus.

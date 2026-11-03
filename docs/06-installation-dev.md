@@ -1,7 +1,10 @@
 # 06 — Installation (développement) et packaging
 
+## 0. Installation automatique (Windows)
+`scripts\install.cmd` fait tout ce qui suit (sections 2 à 4 et 6) sans droits administrateur, puis lance le test de fumée. `scripts\uninstall.cmd` retire tout. Les sections ci-dessous décrivent ce que fait le script, pour macOS et pour le dépannage.
+
 ## 1. Prérequis
-- Node.js ≥ 20, npm ; Python ≥ 3.10 (workers) ; ffmpeg dans le PATH.
+- Node.js ≥ 18. **Aucun `npm install`** : le serveur MCP n'a pas de dépendance (MCP sur stdio et WebSocket sont implémentés dans `packages/mcp-server/src`). Python ≥ 3.10 et ffmpeg seulement pour les workers (phase 3).
 - Premiere Pro et/ou After Effects installés (toute version ≥ 2018).
 - Un client MCP (assistant IA en ligne de commande ou application de bureau compatible MCP).
 
@@ -11,16 +14,16 @@ Un panneau CEP non signé ne se charge que si `PlayerDebugMode` est activé pour
 
 **Windows** (PowerShell, utilisateur courant, sans admin) :
 ```powershell
-foreach ($v in 9..12) {
+foreach ($v in 8..12) {
   New-Item -Path "HKCU:\Software\Adobe\CSXS.$v" -Force | Out-Null
   Set-ItemProperty -Path "HKCU:\Software\Adobe\CSXS.$v" -Name PlayerDebugMode -Value "1" -Type String
 }
 ```
 **macOS** :
 ```bash
-for v in 9 10 11 12; do defaults write com.adobe.CSXS.$v PlayerDebugMode 1; done
+for v in 8 9 10 11 12; do defaults write com.adobe.CSXS.$v PlayerDebugMode 1; done
 ```
-Correspondance indicative : CEP 9 → 2019, CEP 10 → 2020, CEP 11 → 2021-2023, CEP 12 → 2024 et suivants.
+Correspondance indicative : CEP 8 → 2018, CEP 9 → 2019-2020, CEP 10 → 2020-2021, CEP 11 → 2021-2023, CEP 12 → 2024 et suivants. Premiere Pro 2020 (14.x) utilise CEP 9/10.
 
 ## 3. Emplacement du panneau
 
@@ -29,7 +32,7 @@ Correspondance indicative : CEP 9 → 2019, CEP 10 → 2020, CEP 11 → 2021-202
 | Windows | `%APPDATA%\Adobe\CEP\extensions\` | `C:\Program Files\Common Files\Adobe\CEP\extensions\` (et `Program Files (x86)`) |
 | macOS | `~/Library/Application Support/Adobe/CEP/extensions/` | `/Library/Application Support/Adobe/CEP/extensions/` |
 
-En développement, `scripts/install-dev` crée un **lien symbolique** `…/extensions/com.adobe-mcp.panel → packages/host-cep/dist/cep` (Bolt CEP le fait aussi via `npm run symlink`). Relancer l'application après chaque changement de `manifest.xml` ; les changements JS/JSX sont rechargés par le panneau (hot reload Bolt).
+L'installeur crée une **jonction** `…/extensions/com.adobe-mcp.panel → packages/host-cep` (pas de droits admin, les modifications du dépôt sont prises en compte sans réinstaller). Relancer l'application après un changement de `manifest.xml` ou des fichiers `.jsx` ; pour `index.html`/`main.js`, fermer et rouvrir le panneau suffit.
 
 Débogage : un fichier `.debug` à la racine du panneau expose un port Chrome DevTools (`http://localhost:8860` par exemple) pour inspecter le JS du panneau ; les erreurs ExtendScript sont renvoyées dans le résultat (`error.detail`) et dans le journal `~/.adobe-mcp/logs/`.
 
@@ -62,7 +65,7 @@ Débogage : un fichier `.debug` à la racine du panneau expose un port Chrome De
   </DispatchInfoList>
 </ExtensionManifest>
 ```
-Le `ScriptPath` est chargé automatiquement par l'hôte ; pour After Effects et Premiere on charge la bonne lib selon `csInterface.hostEnvironment.appName` (`PPRO` / `AEFT`).
+Le `ScriptPath` (`jsx/index.jsx`) est chargé par l'hôte ; il inclut `ppro.jsx` et `aeft.jsx`, chacun ne s'active que dans son application (`BridgeTalk.appName`). Le panneau n'active pas Node.js : il lit `bridge.json` via `cep.fs` et parle au serveur en WebSocket natif.
 
 ## 5. After Effects : préférences et mode sans panneau
 - Préférences > Scripts et expressions > **Autoriser les scripts à écrire des fichiers et à accéder au réseau** : nécessaire pour les exports de JSON et le mode `-r`.
@@ -82,9 +85,9 @@ Le `ScriptPath` est chargé automatiquement par l'hôte ; pour After Effects et 
   }
 }
 ```
-Le skill `skills/adobe-editing` se copie dans le dossier de skills de votre client MCP (ou s'installe via le dépôt).
+L'installeur déclare le serveur dans les clients listés dans `scripts/clients.json` (fichier de configuration ou commande `mcp add`) et copie `skills/adobe-editing` dans le dossier de skills des clients qui en ont un.
 
-## 7. Workers Python
+## 7. Workers Python *(phase 3, pas encore livrés)*
 ```bash
 cd packages/workers
 python -m venv .venv && .venv/Scripts/activate   # ou source .venv/bin/activate
@@ -100,6 +103,7 @@ Les modèles sont téléchargés au premier usage dans `packages/workers/models/
 4. Le serveur MCP est distribué comme paquet npm (`npx adobe-mcp`) ; les workers comme paquet Python ou binaire (PyInstaller) selon la phase.
 
 ## 9. Vérification rapide
-1. Ouvrir Premiere → Window > Extensions > Adobe MCP → le panneau affiche « Connecté à mcp-server (port 8765) ».
+0. `node packages/mcp-server/test/smoke.js` : teste le serveur avec un faux Premiere, sans Adobe (l'installeur le lance aussi).
+1. Ouvrir Premiere → Fenêtre > Extensions > Adobe MCP → le panneau affiche « Connecté au serveur MCP (port 8765) » une fois le client MCP lancé.
 2. Dans le client MCP : « quelles sont tes capacités Premiere ? » → `ppro_get_capabilities` renvoie la version et la liste des fonctions.
 3. « Exporte l'image à 10 s » → PNG affiché.
