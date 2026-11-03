@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Adobe MCP</title>
+  <style>
+    body { margin: 0; padding: 12px; background: #232323; color: #ddd; font: 12px/1.4 -apple-system, "Segoe UI", sans-serif; }
+    h1 { font-size: 13px; margin: 0 0 8px; font-weight: 600; }
+    .row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #888; flex: none; }
+    .dot.ok { background: #3fb950; } .dot.ko { background: #e5534b; } .dot.wait { background: #d29922; }
+    button { background: #3a3a3a; color: #ddd; border: 1px solid #555; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+    button:hover { background: #444; }
+    input { background: #1a1a1a; color: #ddd; border: 1px solid #555; border-radius: 3px; padding: 2px 4px; font-size: 11px; width: 60px; }
+    #log { margin-top: 8px; height: 120px; overflow-y: auto; background: #1a1a1a; border: 1px solid #333; padding: 6px; font: 10px/1.4 Consolas, monospace; white-space: pre-wrap; }
+    .muted { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>Adobe MCP <span id="host" class="muted"></span></h1>
+  <div class="row"><span id="dot" class="dot"></span><span id="status">Démarrage…</span></div>
+  <div class="row">
+    <button id="reconnect">Reconnecter</button>
+    <span class="muted">port</span><input id="port" value="">
+    <button id="apply">OK</button>
+  </div>
+  <div id="log"></div>
+  <script src="./js/CSInterface.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>

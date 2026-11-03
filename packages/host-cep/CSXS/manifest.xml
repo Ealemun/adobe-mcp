@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.adobe-mcp" ExtensionBundleVersion="0.1.0"
+  ExtensionBundleName="Adobe MCP" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ExtensionList>
+    <Extension Id="com.adobe-mcp.panel" Version="0.1.0" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <!-- Premiere Pro 2018 (12.0) et suivants -->
+      <Host Name="PPRO" Version="[12.0,99.9]" />
+      <!-- After Effects 2018 (15.0) et suivants -->
+      <Host Name="AEFT" Version="[15.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="9.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.adobe-mcp.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/index.jsx</ScriptPath>
+          <!-- Pas de Node.js : le panneau n'utilise que WebSocket natif et cep.fs -->
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Adobe MCP</Menu>
+          <Geometry>
+            <Size>
+              <Height>260</Height>
+              <Width>340</Width>
+            </Size>
+            <MinSize>
+              <Height>120</Height>
+              <Width>220</Width>
+            </MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

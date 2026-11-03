@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionList>
+  <Extension Id="com.adobe-mcp.panel">
+    <HostList>
+      <Host Name="PPRO" Port="8860"/>
+      <Host Name="AEFT" Port="8861"/>
+    </HostList>
+  </Extension>
+</ExtensionList>
