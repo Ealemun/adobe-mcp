@@ -32,6 +32,7 @@ Adobe (sept. 2026) : CEP reste actif dans Premiere et After Effects jusqu'à fin
 
 | Fichier | Contenu |
 |---|---|
+| `docs/00-guide-utilisateur.md` | **Commencer ici** : installation en 5 minutes, premier montage, ce qu'on peut demander, sécurité, dépannage |
 | `docs/01-architecture.md` | Composants, flux, choix techniques, sécurité |
 | `docs/02-protocole-bridge.md` | Protocole WebSocket serveur MCP ↔ pont Adobe, format des données |
 | `docs/03-catalogue-tools.md` | Catalogue exhaustif des tools MCP (Premiere, After Effects, média, sécurité) |
