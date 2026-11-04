@@ -40,8 +40,8 @@ description: Mixer et nettoyer l'audio d'un montage dans Premiere Pro (niveaux v
 ### P1 — Audit audio d'une séquence
 Objectif : savoir où on en est avant de toucher quoi que ce soit.
 1. `ppro_get_sequence {tracks: "audio"}` [existant] : pistes, clips, durée, pistes muettes.
-2. `ppro_get_audio_info` [prévu] : gain, volume de piste, effets déjà posés, mute/solo.
-3. `ppro_export_audio {tracks: ["A1"]}` [existant] par piste (voix, musique, SFX) → `media_loudness {path}` [prévu] ou `media_probe` [prévu] : intégrée, crête vraie, LRA.
+2. `ppro_get_audio_info` [existant] : gain, volume de piste, effets déjà posés, mute/solo.
+3. `ppro_export_audio {tracks: ["A1"]}` [existant] par piste (voix, musique, SFX) → `media_loudness {path}` [prévu] ou `media_probe` [existant] : intégrée, crête vraie, LRA.
 4. Résumer : écart voix/musique en LU, crêtes > −1 dBTP, pistes à −35 LUFS (probablement oubliées), clips sans étiquette Essential Sound.
 Vérification : un tableau piste → LUFS / dBTP / problème présumé, présenté à l'utilisateur avant tout plan.
 
@@ -53,15 +53,15 @@ Objectif : voix propre, régulière, intelligible, sans effet audible.
 4. EQ : `ppro_add_audio_effect {effect: "Parametric Equalizer", params: {HPF: 80–100 Hz, cloche −2…−4 dB à 200–400 Hz, +1…+2 dB à 2–5 kHz}}` [prévu]. Voir tableau EQ.
 5. De-esser : `{effect: "DeEsser", params: {freq: 5–8 kHz, reduction: 3–6 dB}}` [prévu] (ou curseur DeEss d'Essential Sound, ou Audition si l'effet manque dans cette version).
 6. Compresseur : `{effect: "Tube-modeled Compressor" | "Multiband Compressor", params: {ratio: 3:1, attack: 10 ms, release: 100 ms, threshold réglé pour 3–6 dB de réduction}}` [prévu].
-7. Gain : `ppro_set_clip_gain {clipIds, normalizeTo: cible}` [prévu] pour aligner toutes les prises.
+7. Gain : `ppro_set_clip_volume {clipIds, normalizeTo: cible}` [prévu] pour aligner toutes les prises.
 8. Limiteur sur la piste voix ou Mix : `{effect: "Hard Limiter", params: {ceiling: −1 dBTP}}` [prévu], ≤ 2–3 dB de réduction.
 Vérification : `ppro_export_audio` de la piste voix → `media_loudness` : LRA resserrée, aucune crête > −1 dBTP ; écouter 10 s avec/sans effets (le « avec » ne doit pas sembler meilleur seulement parce qu'il est plus fort).
 
 ### P3 — Niveaux cibles et normalisation
 Objectif : chaque famille au bon niveau, mix final à la cible plateforme.
 1. Demander la plateforme ; choisir la cible dans le tableau « Normes ».
-2. Voix : `ppro_set_clip_gain {normalizeTo}` [prévu] sur tous les clips voix, ou Auto-Match (−23 LUFS par défaut, broadcast) puis remonter la piste.
-3. Musique : `ppro_set_track_volume {track: "A3", db: −12…−20 par rapport à la voix}` [prévu]. SFX : `ppro_set_clip_gain` clip par clip (chaque effet a son propre niveau).
+2. Voix : `ppro_set_clip_volume {normalizeTo}` [prévu] sur tous les clips voix, ou Auto-Match (−23 LUFS par défaut, broadcast) puis remonter la piste.
+3. Musique : `ppro_set_track_volume {track: "A3", db: −12…−20 par rapport à la voix}` [prévu]. SFX : `ppro_set_clip_volume` clip par clip (chaque effet a son propre niveau).
 4. Export mix complet : `ppro_export_audio {tracks: "all"}` [existant] → `media_loudness {target}` [prévu] : renvoie l'écart à appliquer.
 5. Appliquer l'écart sur la piste Mix (`ppro_set_track_volume {track: "Mix"}`) ou via `media_normalize_audio` [prévu] si on livre un fichier audio séparé.
 Vérification : nouvelle mesure ; intégrée dans ±1 LU de la cible, crête vraie ≤ −1 dBTP, écart voix/musique conservé.
@@ -77,9 +77,9 @@ Vérification : `ppro_get_clip_effects {clipId: musique}` → keyframes présent
 
 ### P5 — Placer et couper la musique
 Objectif : musique qui commence, respire et finit sur la structure du morceau.
-1. `media_detect_beats {musique}` [prévu] → BPM, temps forts, sections ; `ppro_add_markers` [prévu] sur les temps forts (couleur dédiée).
+1. `media_detect_beats {musique}` [prévu] → BPM, temps forts, sections ; `ppro_add_markers` [existant] sur les temps forts (couleur dédiée).
 2. Choisir le point d'entrée : sur un temps fort, de préférence au début d'une section (intro, couplet) ; aligner le drop/refrain sur le meilleur plan.
-3. Raccourcir : retirer des mesures entières entre deux temps forts (`ppro_cut_at {times}` [existant] + `ppro_remove_ranges` [prévu]), raccord avec Constant Power court. Allonger : dupliquer le clip, caler les coups de batterie, chevauchement 1–2 s avec fondu croisé.
+3. Raccourcir : retirer des mesures entières entre deux temps forts (`ppro_cut_at {times}` [existant] + `ppro_remove_ranges` [existant]), raccord avec Constant Power court. Allonger : dupliquer le clip, caler les coups de batterie, chevauchement 1–2 s avec fondu croisé.
 4. Fin : soit fondu 1–2 s (`ppro_add_transition {side: "out", name: "Exponential Fade", duration: 1.5}` [prévu]), soit « cap » : couper les ~10 dernières secondes du morceau, les placer sur une piste voisine, aligner les formes d'onde, couper les deux sur un temps fort.
 5. Pas de paroles chantées sous une voix parlée.
 Vérification : écouter chaque raccord les yeux fermés ; s'il s'entend, déplacer la coupe au temps fort voisin.
@@ -104,7 +104,7 @@ Vérification : `ppro_get_sequence {range}` : audio et vidéo décalés comme pr
 ### P8 — Pops, clics, bruits de bouche
 Objectif : retirer les artefacts ponctuels sans toucher à la voix.
 1. Localiser : `ppro_export_audio` voix → `media_waveform_image {range}` [prévu] ou écoute ; les pops sont des bosses graves isolées, les clics des pics très courts.
-2. Plosive : coupe-bas (déjà en P2) ; si elle reste, `ppro_set_volume_keyframes` [prévu] creux de −6 à −10 dB sur 50–100 ms autour du pop (repère), ou coupe-bas local plus haut (150 Hz) sur un sous-clip (`ppro_cut_at` [existant] puis effet sur le morceau).
+2. Plosive : coupe-bas (déjà en P2) ; si elle reste, `ppro_set_volume_keyframes` [existant] creux de −6 à −10 dB sur 50–100 ms autour du pop (repère), ou coupe-bas local plus haut (150 Hz) sur un sous-clip (`ppro_cut_at` [existant] puis effet sur le morceau).
 3. Clics : si la version le permet, Audition : Effects > Diagnostics > DeClicker (preset par défaut, Scan, Repair All, repasser si besoin) ; sinon `media_denoise` [prévu] sur l'export puis réimport.
 4. Bruit de fond constant : `media_denoise` [prévu] ou DeNoise (P2), jamais plusieurs outils de bruit empilés.
 Vérification : écouter le passage isolé ; aucun « trou » audible dans la voix.
@@ -112,7 +112,7 @@ Vérification : écouter le passage isolé ; aucun « trou » audible dans la vo
 ### P9 — Contrôle final et export
 1. `ppro_export_audio {tracks: "all"}` [existant] → `media_loudness {target}` [prévu] : intégrée, crête vraie, LRA.
 2. Corriger sur la piste Mix (`ppro_set_track_volume` + Hard Limiter) ; remesurer.
-3. `ppro_export_sequence {preset}` [prévu] ; `media_probe` [prévu] sur le fichier rendu : loudness identique à la mesure de la timeline (l'encodage ne doit pas changer l'intégrée de plus de ~1 LU).
+3. `ppro_export_sequence {preset}` [prévu] ; `media_probe` [existant] sur le fichier rendu : loudness identique à la mesure de la timeline (l'encodage ne doit pas changer l'intégrée de plus de ~1 LU).
 4. Rapport : cible visée, valeurs obtenues, points écoutés.
 
 ## Paramètres de référence

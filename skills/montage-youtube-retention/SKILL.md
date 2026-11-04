@@ -69,7 +69,7 @@ Objectif : confirmer la promesse en 5 s, dire le sujet avant 15 s, donner l'enje
 3. Assembler en trois temps : 0–5 s capture (plan le plus fort de la vidéo, ou le résultat fini pour un tutoriel), 5–15 s promesse, 15–30 s enjeu et départ. Texte à l'écran sur la promesse.
 4. Couper tout ce qui précède : salutations, logo, « dans cette vidéo on va… » générique. Habillage de marque éventuel après l'accroche, < 5 s.
 5. Densité : une coupe ou un changement visuel toutes les 10–15 s dans l'ouverture, premier pattern interrupt délibéré vers 25–35 s.
-6. Outils : `ppro_cut_at` [existant] + `ppro_remove_ranges` [prévu] pour retirer le préambule ; `ppro_extract_range_to_sequence` [prévu] pour déplacer un moment fort en tête ; `ppro_add_text` [prévu] pour la promesse ; `ppro_add_markers {name: "hook"}` [prévu].
+6. Outils : `ppro_cut_at` [existant] + `ppro_remove_ranges` [existant] pour retirer le préambule ; `ppro_extract_range_to_sequence` [existant] pour déplacer un moment fort en tête ; `ppro_add_text` [prévu] pour la promesse ; `ppro_add_markers {name: "hook"}` [prévu].
 
 Vérification : `ppro_export_frames {times: [0, 2, 5, 10, 15, 30]}` [prévu] (ou `ppro_export_frame` [existant] image par image) ; à 5 s l'image doit ressembler à la miniature ; le transcript des 15 premières secondes contient le sujet.
 
@@ -81,10 +81,10 @@ Objectif : retirer silences, hésitations et faux départs en gardant une respir
 2. `media_detect_fillers` [prévu] sur le transcript : « euh », mots répétés, phrases reprises. Mode « meilleure prise » : garder la dernière version d'une phrase dite plusieurs fois.
 3. Trier les plages avant suppression : garder les pauses avant une révélation (0,5–1 s) et les silences expressifs ; ne couper qu'à l'intérieur des phrases ou entre deux idées, jamais au milieu d'un mot.
 4. Présenter : N plages, durée gagnée, durée avant/après. `ppro_checkpoint {label: "clean-speech"}` [existant].
-5. Supprimer : `ppro_remove_ranges {ripple: true}` [prévu] ; à défaut, `ppro_cut_at {times}` [existant] puis suppression par l'utilisateur. Variante « écouter d'abord » : `ppro_disable_clips` [prévu] puis `ppro_remove_disabled_clips` [prévu].
+5. Supprimer : `ppro_remove_ranges {ripple: true}` [prévu] ; à défaut, `ppro_cut_at {times}` [existant] puis suppression par l'utilisateur. Variante « écouter d'abord » : `ppro_disable_clips` [existant] puis `ppro_remove_disabled_clips` [existant].
 6. Masquer les jump cuts restants : punch-in alterné (P5), B-roll (P6), ou Morph Cut si caméra et fond sont stables. Fondu audio de 2 à 4 images sur chaque coupe (repère) pour éviter les clics.
 
-Vérification : relire `ppro_get_sequence {range: [0, 60]}` [existant] ; aucun clip < 0,3 s (repère) sauf intention ; écouter 30 s au hasard via `ppro_export_range` [prévu].
+Vérification : relire `ppro_get_sequence {range: [0, 60]}` [existant] ; aucun clip < 0,3 s (repère) sauf intention ; écouter 30 s au hasard via `ppro_export_range` [existant].
 
 ### P4 — Poser le rythme et les pattern interrupts
 
@@ -94,7 +94,7 @@ Objectif : qu'aucun tronçon ne reste visuellement identique trop longtemps, san
 2. Lister les candidats dans le transcript : chiffre, nom propre, concept, étape, punchline, question au spectateur, changement de sujet.
 3. Attribuer un type d'interruption par candidat, en alternant : punch-in (P5), B-roll (P6), texte à l'écran, son court (whoosh, pop) sur chaque mouvement, changement de musique sur chaque section, silence avant une révélation.
 4. Micro-règle : sur un segment face caméra, un changement toutes les 5 à 10 s (3 à 7 s pour un public jeune). Macro-règle : une interruption franche toutes les 30 à 90 s. Rafale : 5 à 10 coupes rapides toutes les 2–3 min après la 8e minute, puis retour au calme.
-5. Outils : `ppro_add_markers` [prévu] (une couleur par type), puis `ppro_punch_in` [prévu], `ppro_insert_clip` [prévu], `ppro_add_text` [prévu], `ppro_place_sfx` [prévu].
+5. Outils : `ppro_add_markers` [existant] (une couleur par type), puis `ppro_punch_in` [existant], `ppro_insert_clip` [existant], `ppro_add_text` [prévu], `ppro_place_sfx` [existant].
 6. Mesurer : coupes/minute et plus long plan fixe par zone, via `ppro_get_sequence` [existant].
 
 Vérification : plus long plan fixe < 40 s partout ; pas deux interruptions du même type d'affilée ; dans un passage émotionnel ou une démonstration, moins d'interruptions, pas plus.
@@ -107,7 +107,7 @@ Objectif : des zooms qui soulignent sans distraire.
 2. Amplitude : 110–112 % sur source 1080p (jamais > 115 %), 110–120 % sur source 4K en séquence 1080p. Garder les yeux au même endroit dans le cadre (ajuster Position, pas seulement Scale).
 3. Durée : coupe sèche (0 image) ou snap 1 à 2 images pour un effet punch ; 0,5 à 1 s avec ease in/out pour un zoom progressif (repère). Pas d'interpolation linéaire : rendu mécanique.
 4. Tenue : au moins une phrase complète, souvent 3 à 10 s ; alterner large → serré → large ; jamais deux zooms sur moins de 3 s.
-5. `ppro_punch_in {clipId, ranges: [{start, end, scale: 112, position?}], ease: "easeInOut"}` [prévu] ; à défaut `ppro_set_keyframes` [prévu] sur Motion > Scale et Position.
+5. `ppro_punch_in {clipId, ranges: [{start, end, scale: 112, position?}], ease: "easeInOut"}` [prévu] ; à défaut `ppro_set_keyframes` [existant] sur Motion > Scale et Position.
 
 Vérification : `ppro_export_frame` [existant] au milieu d'un punch-in : visage net, yeux à la même hauteur qu'en plan large, pas de bord noir.
 
@@ -115,11 +115,11 @@ Vérification : `ppro_export_frame` [existant] au milieu d'un punch-in : visage 
 
 Objectif : illustrer ce qui est dit, 35 à 50 % du temps, sans couvrir les moments qui demandent le visage.
 
-1. Indexer les rushes : `ppro_list_items {type: "video"}` [prévu] → `media_extract_frames {every: 2}` [prévu] → `media_contact_sheet` [prévu] → description par clip (recette « B-roll automatique » de `adobe-editing`).
+1. Indexer les rushes : `ppro_list_items {type: "video"}` [prévu] → `media_extract_frames {every: 2}` [prévu] → `media_contact_sheet` [existant] → description par clip (recette « B-roll automatique » de `adobe-editing`).
 2. Marquer dans le transcript : concept, statistique, produit, lieu, étape de démonstration, toute explication de plus de 2 phrases.
 3. Exclure : points clés, anecdotes personnelles, appels à l'action → rester face caméra.
 4. Placer : couper à une fin de phrase ou entre deux idées, jamais en pleine pensée ; plans de 3 à 8 s (plus long si démonstration, mais la narration continue) ; un B-roll complexe reste ≥ 3 s ; revenir au plan frontal quand la voix reprend un nouveau point.
-5. `ppro_insert_clip {mode: "overwrite", videoTrack: "V2", duration 3–8 s}` [prévu] ; `ppro_set_transform` [prévu] pour un léger mouvement (échelle 100 → 105 % sur la durée, repère).
+5. `ppro_insert_clip {mode: "overwrite", videoTrack: "V2", duration 3–8 s}` [prévu] ; `ppro_set_transform` [existant] pour un léger mouvement (échelle 100 → 105 % sur la durée, repère).
 
 Vérification : couverture B-roll calculée depuis `ppro_get_sequence` [existant] : entre 30 et 50 % ; aucun B-roll sous un CTA ; `media_contact_sheet` des B-roll posés pour repérer un plan hors sujet.
 
@@ -131,7 +131,7 @@ Objectif : une raison de rester toutes les 2 à 3 minutes et aucune sortie offer
 2. Planter 2 à 3 boucles ouvertes dans les 2 premières minutes (payoff différé, « la troisième raison à la fin », cliffhanger). Les fermer une à une ; la dernière juste avant la fin.
 3. Re-hook toutes les 2 min environ : rappel de la promesse, question, tease. Sponsor ou CTA après un re-hook, jamais après un point résolu ; CTA < 5 s, placé au milieu après une valeur délivrée.
 4. Fin : couper récap, adieux, « abonnez-vous » des 30 dernières secondes ; garder l'énergie et le rythme de coupe du milieu ; continuer à parler sous l'écran de fin (20 dernières secondes) avec une seule recommandation orale.
-5. `ppro_add_markers` [prévu] : `section`, `rehook`, `loop-open`, `loop-close`, `cta`. Contrôler les distances entre marqueurs.
+5. `ppro_add_markers` [existant] : `section`, `rehook`, `loop-open`, `loop-close`, `cta`. Contrôler les distances entre marqueurs.
 
 Vérification : aucune distance > 3 min entre deux re-hooks ; toute boucle ouverte a un marqueur de fermeture ; les 60 dernières secondes ont la même densité de coupes que la section précédente (`ppro_get_sequence {range}` [existant]).
 
@@ -145,7 +145,7 @@ Vérification : liste en ordre croissant, premier horodatage 00:00, ≥ 3 lignes
 
 ### P9 — Musique et niveaux
 
-1. `ppro_get_audio_info` [prévu] + `media_loudness` [prévu] par piste exportée (`ppro_export_audio {tracks}` [existant]).
+1. `ppro_get_audio_info` [existant] + `media_loudness` [existant] par piste exportée (`ppro_export_audio {tracks}` [existant]).
 2. Voix : normaliser à −16 LUFS (recette `adobe-editing`), crêtes entre −12 et −6 dBFS ; mix final visé −14 LUFS intégrés pour YouTube.
 3. Musique : −28 LUFS sous la voix (soit ≈ 12 dB de ducking depuis un niveau plein à −16), remontée à 12–14 dB sous le plein niveau sur intro, B-roll sans voix et transitions. Passages calmes : 20–25 dB sous la voix, 60–80 BPM ; passages énergiques : 8–12 dB sous, 100–120 BPM.
 4. `ppro_auto_duck {musicTrack, voiceTracks, reductionDb: 12, fade: 0.3}` [prévu] (fondu 0,3 à 1 s ; attaque 0,2 s / relâche 0,8 s dans `04-fonctionnalites-recettes`). Si la musique masque la voix : EQ −3 à −6 dB sur la musique entre 800 et 3000 Hz.
@@ -323,7 +323,7 @@ AVD = temps de visionnage total ÷ vues ; % moyen visionné = AVD ÷ durée. Moy
 
 **Lire la courbe** : YouTube Studio > Contenu > vidéo > Analyses > Engagement (ou Vue d'ensemble) ; « Moments clés » : Intro, Moments forts, Pics, Baisses ; « Afficher plus » compare aux vidéos YouTube de durée similaire ; « typique » = 10 dernières vidéos de la chaîne de durée similaire ; onglet Segments (nouveaux / fidèles, abonnés / non).
 
-**After Effects (optionnel)** : titres cinétiques et compteurs pour les chiffres du hook via les briques de `adobe-editing` (titre : position + opacité, ease out 0,4 s) ; exporter en MOGRT et poser dans Premiere avec `ppro_insert_mogrt` [prévu].
+**After Effects (optionnel)** : titres cinétiques et compteurs pour les chiffres du hook via les briques de `adobe-editing` (titre : position + opacité, ease out 0,4 s) ; exporter en MOGRT et poser dans Premiere avec `ppro_insert_mogrt` [existant].
 
 ## Sources
 

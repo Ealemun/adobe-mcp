@@ -6,7 +6,7 @@ description: Animer et construire du motion design dans After Effects (keyframes
 
 Complète `adobe-editing` (règles permanentes, lecture avant écriture, checkpoints). Pour la lisibilité des textes, les zones de sécurité et les sous-titres, charger aussi `titres-texte-sous-titres`. Pour le tracking, les masques et le fond vert, voir `after-effects-effets-video`.
 
-**État des outils** : tous les outils `aeft_*` sont `[prévu]` (phase P4 de la roadmap). Tant qu'ils n'existent pas, l'agent ne peut pas piloter After Effects : il décrit le plan, fournit les valeurs exactes et guide l'utilisateur pas à pas (section « Comment un humain le fait »). Ne jamais annoncer comme faisable immédiatement un outil marqué `[prévu]`.
+**État des outils** : les outils `aeft_*` marqués `[existant]` pilotent After Effects (panneau Adobe MCP ouvert dans AE) : comps, calques, texte, formes, propriétés et images-clés avec easing, expressions (test puis pose), effets, précomposition, rendu, propriétés essentielles et export MOGRT. Ceux marqués `[prévu]` (animateurs de texte, purge…) se font à la main : décrire le plan, fournir les valeurs exactes et guider l'utilisateur pas à pas (section « Comment un humain le fait »). Les chemins de propriétés acceptent les noms anglais (`Transform.Position`) ou les matchNames (`ADBE Position`) : en cas de doute, lire l'arbre avec `aeft_get_comp {depth: 2}`.
 
 ## Quand utiliser ce skill
 
@@ -60,12 +60,12 @@ Ne pas l'utiliser pour : montage de rushes (Premiere), étalonnage, mix audio, e
 ### P1. Poser une animation de base (position, échelle, opacité)
 Objectif : un élément qui entre, se stabilise, sort, avec un mouvement naturel.
 1. Lire l'état : `aeft_get_comp {depth: 2, includeKeyframes: true}` [prévu].
-2. Fixer le point d'ancrage (valeur de `Anchor Point`) au bon endroit avec `aeft_set_property` [prévu] ou à la main (touche Y).
-3. Poser 2 keyframes minimum (`aeft_set_keyframes` [prévu]) : état initial hors champ / à 0 % d'opacité, état final. Entrée typique : 12 à 15 images à 30 i/s (repère), sortie : 8 à 10 images (repère).
+2. Fixer le point d'ancrage (valeur de `Anchor Point`) au bon endroit avec `aeft_set_property` [existant] ou à la main (touche Y).
+3. Poser 2 keyframes minimum (`aeft_set_keyframes` [existant]) : état initial hors champ / à 0 % d'opacité, état final. Entrée typique : 12 à 15 images à 30 i/s (repère), sortie : 8 à 10 images (repère).
 4. Appliquer l'easing : `aeft_apply_ease {preset: "easeInOut"}` [prévu], ou en direct `KeyframeEase(0, 33.33333)` des deux côtés (équivalent exact de F9 ; 33 donne une courbe légèrement différente).
 5. Ajuster dans le graphe de vitesse : pic proche de la fin d'une entrée (ease out fort : influence entrante élevée, sortante faible).
 6. Ajouter dépassement ou rebond si le style le demande (P3).
-7. Vérifier : `aeft_export_frame` [prévu] à 3 instants (début, milieu de l'entrée, fin) et comparer. Prévoir aussi une image à mi-sortie.
+7. Vérifier : `aeft_export_frame` [existant] à 3 instants (début, milieu de l'entrée, fin) et comparer. Prévoir aussi une image à mi-sortie.
 
 ### P2. Régler l'easing dans le graphe
 Objectif : donner du caractère (vif, lourd, doux) sans keyframes en plus.
@@ -122,7 +122,7 @@ if (n > 0) {
 
 ### P4. Typographie cinétique avec les animateurs de texte
 Objectif : texte qui entre lettre par lettre, mot par mot ou ligne par ligne.
-1. Créer le calque de texte, finir police, taille, interlettrage, position avant d'animer (`aeft_set_text` [prévu]).
+1. Créer le calque de texte, finir police, taille, interlettrage, position avant d'animer (`aeft_set_text` [existant]).
 2. Texte > Animer > choisir la propriété (Position, Opacité, Échelle, Rotation, Flou, Couleur de fond…). Renommer l'animateur selon son rôle (`entrée-position`).
 3. Fixer l'état initial (les valeurs sont relatives à l'état normal) : par exemple Position Y = +60 px (repère), Opacité = 0 %.
 4. Dans le sélecteur de plage, animer **Décalage** de -100 % à 0 % sur environ 1 s (ou **Fin** de 0 à 100 %). Chaque lettre passe ainsi de l'état initial à l'état normal l'une après l'autre.
@@ -147,7 +147,7 @@ Objectif : un lower third propre, animé, éditable.
 3. Fond de bandeau : rectangle 500 × 120 px (exemple), arrondi 30 à 60 pour une pilule ; croissance depuis la gauche : point d'ancrage du groupe à X = -largeur/2, Y = 0, largeur animée de ~0-20 à 500.
 4. Ligne qui se dessine : ajouter **Trim Paths** dans le groupe, animer **Fin** de 0 à 100 % (ou Début si la direction est mauvaise), bouts arrondis (Round Cap).
 5. Texte qui sort de derrière une forme : forme rectangulaire en cache (track matte) du texte avec Alpha + Inversé, texte animé en Y qui monte, tient, redescend. Depuis la version 2023 le calque servant de cache n'a plus à être juste au-dessus.
-6. Ajouter un null parent pour déplacer l'ensemble, puis `aeft_add_shape` [prévu] pour les formes, `aeft_set_layer {parent}` [prévu] pour le lien.
+6. Ajouter un null parent pour déplacer l'ensemble, puis `aeft_add_shape` [existant] pour les formes, `aeft_set_layer {parent}` [prévu] pour le lien.
 7. Durée à l'écran d'un lower third : environ 3 à 6 s ; lire le texte à voix haute deux fois, il doit rester au moins aussi longtemps. Entrée et sortie courtes (voir P1).
 8. Vérifier : image à la fin de l'entrée (texte entièrement lisible), image à mi-sortie, aucun débordement hors cache.
 
@@ -187,7 +187,7 @@ w2 = wiggle(freq, amp, 2, 1, t - dur);            // fin du cycle
 linear(t, 0, dur, w1, w2);                        // fondu entre les deux : boucle parfaite
 ```
 Autres : `smooth()` adoucit un mouvement existant (tracking compris) ; `thisComp.layer("X").position.wiggle(1,100)` applique un wiggle sur une autre propriété sans la modifier ; les marqueurs de comp peuvent piloter du texte (`comment`) ; les keyframes se lisent (`key(n).time`, `.value`, index à partir de 1) mais ne s'éditent pas par expression.
-Procédure : `aeft_validate_expression` [prévu] → `aeft_set_expression` [prévu] → `aeft_export_frame` à deux instants → si l'expression doit durer, `aeft_bake_expression` [prévu] la convertit en keyframes (plus rapide au rendu).
+Procédure : `aeft_validate_expression` [existant] → `aeft_set_expression` [existant] → `aeft_export_frame` à deux instants → si l'expression doit durer, `aeft_bake_expression` [existant] la convertit en keyframes (plus rapide au rendu).
 
 ### P7. Précompositions et organisation
 1. Sélectionner les calques liés, Ctrl/Cmd+Maj+C, nom descriptif (`LT_nom_bandeau`), « Déplacer tous les attributs ».
@@ -209,7 +209,7 @@ Objectif : un titre éditable dans Premiere sans ouvrir After Effects.
 7. Définir l'image de référence (« Définir l'image d'affiche »), puis **Exporter le modèle de graphiques animés** : bibliothèque Creative Cloud, dossier local de modèles (apparaît tout de suite dans Premiere) ou disque.
 8. Lire les avertissements d'export : polices absentes d'Adobe Fonts, besoin d'After Effects installé.
 9. Tester dans Premiere : installer le .mogrt, le poser sur une piste, modifier chaque contrôle, étirer et raccourcir le clip.
-10. Outils : `aeft_essential_props` [prévu], `aeft_export_mogrt` [prévu], puis `ppro_insert_mogrt` [prévu].
+10. Outils : `aeft_essential_props` [existant], `aeft_export_mogrt` [existant], puis `ppro_insert_mogrt` [existant].
 Limites connues : les keyframes d'une propriété ne sont pas modifiables côté éditeur ; une liste déroulante exige des expressions ; un .mogrt ne s'importe pas dans After Effects (Fichier > Ouvrir le projet pour le dézipper) ; les modèles faits dans After Effects n'acceptent pas de média remplaçable aussi facilement que ceux faits dans Premiere ; ajouter le fichier .aegraphic quand on consolide un projet.
 
 ### P9. Boucles et animations en continu
@@ -221,7 +221,7 @@ Limites connues : les keyframes d'une propriété ne sont pas modifiables côté
 ### P10. Rendu et contrôle
 1. Prévisualiser en résolution réduite (moitié ou quart) ; repasser en pleine résolution avant le rendu ; effets lourds (flou, lueur) désactivés pendant la construction, réactivés ensuite.
 2. Rendu en deux temps : maître sans perte (ProRes ou séquence d'images) depuis After Effects, puis encodage final (voir `export-livraison-workflow`). Une séquence d'images permet de reprendre un rendu interrompu.
-3. `aeft_render_queue_add` puis `aeft_render` [prévu] ; ou export direct `aeft_export_mogrt`.
+3. `aeft_render_queue_add` puis `aeft_render` [existant] ; ou export direct `aeft_export_mogrt`.
 
 ## Paramètres de référence
 

@@ -20,7 +20,7 @@ export const DEFAULT_CONFIG = {
   bridge: { port: 8765 },
   safety: { confirmPolicy: 'batch', autoCheckpoint: true, allowScript: false },
   calls: { timeoutMs: 60000 },
-  workers: { python: 'python', whisperModel: 'small', device: 'auto' }
+  transcribe: { command: '', model: 'base' } // commande Whisper personnalisée ({input} {lang} {model} {outDir} {outBase}) ; vide = détection automatique
 };
 
 function deepMerge(a, b) {

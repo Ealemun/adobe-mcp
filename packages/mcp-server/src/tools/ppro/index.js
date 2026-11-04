@@ -8,6 +8,7 @@ import { registerSafetyTools } from './safety.js';
 import { registerRenderTools } from './render.js';
 import { registerEffectTools } from './effects.js';
 import { registerDynamicLinkTools } from './dynamiclink.js';
+import { registerExtraTools } from './extra.js';
 
 export function registerPproTools(server, bridge, config) {
   const ctx = makeContext(server, bridge, config);
@@ -19,4 +20,5 @@ export function registerPproTools(server, bridge, config) {
   registerRenderTools(ctx);
   registerEffectTools(ctx);
   registerDynamicLinkTools(ctx);
+  registerExtraTools(ctx);
 }

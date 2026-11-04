@@ -45,11 +45,11 @@ Objectif : N candidats de 20 à 60 s, autonomes, avec hook.
 
 1. `ppro_get_sequence` [existant] : durée, pistes voix, marqueurs existants.
 2. `ppro_export_audio {preset: "transcription"}` [existant] → `media_transcribe {wordTimestamps: true}` [prévu].
-3. Signaux d'énergie : `media_detect_silences` [prévu] (pauses, rires isolés) + RMS par fenêtre via `media_probe` [prévu]. Repérer rires, hausses de volume, questions, chiffres, contradictions.
+3. Signaux d'énergie : `media_detect_silences` [existant] (pauses, rires isolés) + RMS par fenêtre via `media_probe` [existant]. Repérer rires, hausses de volume, questions, chiffres, contradictions.
 4. Pour chaque candidat, noter sur 5 (vidpros) : hook dans la première seconde ; autonome ou cliffhanger assumé ; réaction visible (rire, geste, expression) ; payoff < 4 s ; pas de préambule. 4/5 = publiable, 5/5 = à pousser.
 5. Borner : début sur la phrase-hook (pas de montée), fin juste après le payoff ou sur une phrase ouverte qui boucle. Retirer 1 à 2 s de « run-up » au début, quelques secondes de « trail-off » à la fin.
 6. `ppro_add_markers [{start, end, name: score + idée, color par score}]` [prévu] → présenter la liste (timecodes, durée, texte) à l'utilisateur.
-7. Pour chaque retenu : `ppro_checkpoint` [existant] puis `ppro_extract_range_to_sequence {start, end, name, aspect: "9:16"}` [prévu]. Repli phase 1 : `ppro_duplicate_sequence` [existant] + `ppro_cut_at {times: [start, end]}` [existant], puis demander la suppression des parties hors plage (`ppro_remove_ranges` [prévu]).
+7. Pour chaque retenu : `ppro_checkpoint` [existant] puis `ppro_extract_range_to_sequence {start, end, name, aspect: "9:16"}` [prévu]. Repli phase 1 : `ppro_duplicate_sequence` [existant] + `ppro_cut_at {times: [start, end]}` [existant], puis demander la suppression des parties hors plage (`ppro_remove_ranges` [existant]).
 8. Vérifier : `ppro_get_sequence {range}` ; `ppro_export_frame {time: start}` [existant] : la première image doit déjà montrer le sujet.
 
 Repère de volume : un épisode de 60 min donne 8 à 12 clips publiables (vidpros).
@@ -69,7 +69,7 @@ Décision :
 
 A. Auto Reframe (par défaut)
 1. `ppro_reframe_vertical {aspect: "9:16", strategy: "face"}` [prévu] (équivalent de Sequence > Auto Reframe Sequence, Motion Tracking selon la table ; « Don't nest » sauf keyframes de mouvement ou changements de vitesse à conserver).
-2. `ppro_export_frames {every: 2, size: 480}` [prévu] → `media_contact_sheet` [prévu] : chercher visages coupés, bascules brusques.
+2. `ppro_export_frames {every: 2, size: 480}` [prévu] → `media_contact_sheet` [existant] : chercher visages coupés, bascules brusques.
 3. Corriger un plan : `ppro_set_keyframes {clipId, effect: "Motion", prop: "Position", keyframes}` [prévu] ou, aujourd'hui, guider l'utilisateur (Effect Controls > Auto Reframe > Adjust Framing).
 4. Vérifier : `ppro_export_frame` [existant] à 3 instants (début, milieu, fin).
 
@@ -110,24 +110,24 @@ E. Fond flou (image entière)
 ### P5. Hook et texte d'accroche
 
 1. Dans le transcript, repérer la phrase la plus forte des 10 premières secondes du candidat : affirmation contraire à l'intuition, question précise, promesse chiffrée, résultat montré d'abord (opus.pro).
-2. Si elle n'ouvre pas le clip : `ppro_checkpoint` [existant] → `ppro_remove_ranges` [prévu] sur le préambule (phase 1 : `ppro_cut_at` [existant] + suppression par l'utilisateur).
+2. Si elle n'ouvre pas le clip : `ppro_checkpoint` [existant] → `ppro_remove_ranges` [existant] sur le préambule (phase 1 : `ppro_cut_at` [existant] + suppression par l'utilisateur).
 3. `ppro_add_text {text: 4–8 mots, time: 0, duration: 2.5, style: gros, contraste, position y ≈ 420 px}` [prévu].
-4. Optionnel : `ppro_punch_in {ranges: [{start: 0, end: 2, scale: 112}]}` [prévu] ou SFX court sur l'apparition du texte (`ppro_place_sfx` [prévu]).
+4. Optionnel : `ppro_punch_in {ranges: [{start: 0, end: 2, scale: 112}]}` [prévu] ou SFX court sur l'apparition du texte (`ppro_place_sfx` [existant]).
 5. Vérifier : `ppro_export_frame {time: 0}` [existant] (image de miniature) et `{time: 2}` : sujet visible, texte lisible, pas de noir.
 
 ### P6. Rythme de coupe et boucle de fin
 
 1. `media_detect_silences {minDuration: 0.5, padding: 0.08}` [prévu] → `ppro_remove_ranges {ripple: true}` [prévu].
-2. Scanner la structure : toute plage sans coupe, zoom ou texte > 4 s reçoit un changement : `ppro_punch_in` 100 → 115 % en 4 images (tokcount), alternance zoom/retour, jamais deux zooms en < 3 s ; ou b-roll 1 à 2 s (`ppro_insert_clip` [prévu]).
+2. Scanner la structure : toute plage sans coupe, zoom ou texte > 4 s reçoit un changement : `ppro_punch_in` 100 → 115 % en 4 images (tokcount), alternance zoom/retour, jamais deux zooms en < 3 s ; ou b-roll 1 à 2 s (`ppro_insert_clip` [existant]).
 3. Transitions : coupe franche par défaut ; L-cut de 3 à 5 images vers un b-roll (tokcount).
 4. Boucle : supprimer l'air mort final ; terminer sur une action ou une demi-phrase qui enchaîne sur la première ; même plan ou même cadrage au début et à la fin si possible ; garder 1 à 2 s stables avant la fin pour laisser liker (opus.pro).
 5. Vérifier : `ppro_export_frame` [existant] à la dernière image et à la première ; les deux doivent se « suivre » visuellement (même cadrage, même lumière).
 
 ### P7. Musique et beat
 
-1. `ppro_import_media {paths: [musique]}` [existant] → `media_detect_beats` [prévu] → `ppro_add_markers` [prévu] (downbeats, drop).
+1. `ppro_import_media {paths: [musique]}` [existant] → `media_detect_beats` [prévu] → `ppro_add_markers` [existant] (downbeats, drop).
 2. Coupes sur les temps forts : `ppro_cut_at {times: downbeats}` [existant] ; un changement par temps fort, pas par temps.
-3. Niveaux : `ppro_set_clip_gain {voix: -16 LUFS, musique: -28 LUFS}` + `ppro_auto_duck {reductionDb: 12}` [prévu].
+3. Niveaux : `ppro_set_clip_volume {voix: -16 LUFS, musique: -28 LUFS}` + `ppro_auto_duck {reductionDb: 12}` [prévu].
 4. Son tendance : exporter sans musique et l'ajouter dans l'app, sauf si le montage dépend du beat ; contenu parlé/éducatif → audio original (socialk.it).
 
 ### P8. Export et déclinaisons

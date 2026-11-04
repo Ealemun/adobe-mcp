@@ -45,14 +45,14 @@ description: Exporter et livrer une vidéo depuis Premiere Pro (YouTube 1080p/14
 Objectif : un MP4 H.264 prêt à téléverser, sans perte visible.
 1. Lire la séquence : `ppro_get_sequence` [existant] (taille, fps, durée, pistes audio).
 2. Choisir la cible : 1080p si la séquence est 1080p ; 1440p/4K si la séquence l'est. Option « upscale 1440p » : exporter une séquence 1080p en 2560×1440 (Mise à l'échelle : ajuster) pour obtenir VP9/AV1 côté YouTube ; coût : fichier plus gros. Sources : clip.dor, Pixflow.
-3. Choisir le preset : `ppro_list_export_presets` [prévu] → preset du dépôt `youtube-1080p60` (ou 1440p/2160p) ; sinon « Match Source – Adaptive High Bitrate » puis ajuster.
+3. Choisir le preset : `ppro_list_export_presets` [existant] → preset du dépôt `youtube-1080p60` (ou 1440p/2160p) ; sinon « Match Source – Adaptive High Bitrate » puis ajuster.
 4. Régler : H.264, Progressive, pixels carrés 1.0, High, niveau selon tableau, VBR 2 passes, cible/max selon tableau, AAC 48 kHz stéréo 320 kbit/s, Rec. 709. « Rendu à la profondeur maximale » et « Qualité de rendu maximale » seulement si l'export change la taille (repère ; ×2–3 en temps selon Pixflow).
 5. Annoncer la durée estimée (voir P5) et lancer : `ppro_export_sequence {preset, path, queue?: "ame"}` [prévu].
 6. Vérifier : P7.
 
 ### P2. Déclinaison verticale (Shorts / TikTok / Reels)
 Objectif : un 1080×1920 propre par plateforme.
-1. `ppro_extract_range_to_sequence {aspect: "9:16"}` [prévu] + `ppro_reframe_vertical` [prévu] (recette « Montage vertical » d'`adobe-editing`). Ne pas recadrer à l'export.
+1. `ppro_extract_range_to_sequence {aspect: "9:16"}` [prévu] + `ppro_reframe_vertical` [existant] (recette « Montage vertical » d'`adobe-editing`). Ne pas recadrer à l'export.
 2. Captions incrustées (`ppro_captions_to_graphics` ou `ppro_burn_captions` [prévu]) ; texte hors des zones d'interface bas/droite (`ppro_set_safe_zones` [prévu]).
 3. Durée : Shorts ≤ 180 s ; Reels 3 s–15 min ; TikTok 3–600 s.
 4. Export : H.264 MP4, 1080×1920, fps de la séquence, VBR 1 passe, cible 8–12 Mbit/s (30 fps) / 12–16 (60 fps), max +50 %, AAC 48 kHz stéréo 256–320 kbit/s. Reels : max ≤ 25 Mbit/s et fichier ≤ 1 Go.
@@ -64,12 +64,12 @@ Objectif : conserver une copie quasi sans perte, base de toutes les déclinaison
 1. Dupliquer la séquence en `MASTER_<projet>_vNN` : `ppro_duplicate_sequence` [existant].
 2. Export : QuickTime ProRes 422 HQ (ou 4444 si alpha) sur Mac ; MXF OP1a DNxHR HQ/HQX (ou DNxHD 185x/220x) sur Windows ; taille et fps de la séquence ; audio PCM 48 kHz. `ppro_export_sequence {preset: "master-prores-422hq"}` [prévu].
 3. Stocker avec le projet consolidé (P10) ; nommer `MASTER_<projet>_vNN_<date>.mov`.
-4. Vérifier : `media_probe` [prévu] → codec, durée identique à la séquence, 2 canaux audio.
+4. Vérifier : `media_probe` [existant] → codec, durée identique à la séquence, 2 canaux audio.
 
 ### P4. Export d'une plage (in/out) et lots par marqueurs
 Objectif : rendre une partie de la séquence, ou N extraits en une passe.
 1. Plage unique : `ppro_set_in_out {in, out}` [prévu] puis `ppro_export_range {start, end, preset, path}` [prévu] (Plage « Source In/Out »).
-2. Lots : `ppro_get_markers` [prévu] → pour chaque marqueur avec durée, `ppro_export_range {..., queue: "ame"}` avec nom `Projet_vNN_<marqueur>.mp4`. L'export par marqueur n'est pas natif dans Premiere : on boucle (repère).
+2. Lots : `ppro_get_markers` [existant] → pour chaque marqueur avec durée, `ppro_export_range {..., queue: "ame"}` avec nom `Projet_vNN_<marqueur>.mp4`. L'export par marqueur n'est pas natif dans Premiere : on boucle (repère).
 3. Lancer la file Media Encoder une fois tous les éléments ajoutés ; l'utilisateur peut continuer à monter pendant ce temps. Source : Freevisuals.
 4. Vérifier : nombre de fichiers = nombre de plages ; durée de chacun = out − in (`media_probe`).
 
@@ -94,10 +94,10 @@ Objectif : rendre une partie de la séquence, ou N extraits en une passe.
 
 ### P8. Mettre en ordre un projet
 1. `ppro_get_project` [existant] + `ppro_list_items {recursive: true}` [prévu] → inventaire par type, fps, taille, hors ligne, inutilisé.
-2. Proposer l'arborescence (voir `references/organisation-projet.md`), puis `ppro_create_bin` / `ppro_move_items` / `ppro_rename_item` [prévu]. Annoncer le plan avant de déplacer.
+2. Proposer l'arborescence (voir `references/organisation-projet.md`), puis `ppro_create_bin` / `ppro_move_items` / `ppro_rename_item` [existant]. Annoncer le plan avant de déplacer.
 3. Séquences : renommer `SEQ_<projet>_vNN` ; marquer le master. Signaler les séquences dont le fps ≠ fps des rushes principaux.
 4. Médias hors ligne : `ppro_find_items {offline: true}` → `ppro_relink_media {searchFolder}` [prévu]. Inutilisés : lister, ne supprimer qu'avec accord.
-5. `ppro_save_project` [prévu]. Vérifier : nouvel inventaire sans « hors ligne », chutiers remplis.
+5. `ppro_save_project` [existant]. Vérifier : nouvel inventaire sans « hors ligne », chutiers remplis.
 
 ### P9. Proxys
 1. Déclencheur : lecture saccadée, 4K/HEVC 10 bits, portable, multicam. `ppro_list_items {includeMetadata: true}` → clips sans proxy.
@@ -153,7 +153,7 @@ Sources : YouTube, Compresto, Freevisuals, Ayrshare Instagram. Loudness cible : 
 Sources : YouTube, Ayrshare (YouTube, TikTok, Instagram), Shortsync, Renderforest, videoengineer (Twitch), Vimeo, Compresto.
 
 ### Presets `.epr` attendus dans le dépôt
-`youtube-1080p30`, `youtube-1080p60`, `youtube-1440p60`, `youtube-2160p60`, `shorts-1080x1920`, `reels-1080x1920`, `tiktok-1080x1920`, `review-1080p-8mbps`, `master-prores-422hq`, `master-dnxhr-hq`, `audio-wav-16k-mono` (transcription). `ppro_list_export_presets` [prévu] les expose.
+`youtube-1080p30`, `youtube-1080p60`, `youtube-1440p60`, `youtube-2160p60`, `shorts-1080x1920`, `reels-1080x1920`, `tiktok-1080x1920`, `review-1080p-8mbps`, `master-prores-422hq`, `master-dnxhr-hq`, `audio-wav-16k-mono` (transcription). `ppro_list_export_presets` [existant] les expose.
 
 ## Erreurs fréquentes et comment les détecter
 | Symptôme | Cause probable | Détection | Correction |

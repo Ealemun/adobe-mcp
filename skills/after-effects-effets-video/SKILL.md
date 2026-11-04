@@ -10,7 +10,7 @@ description: Appliquer des effets sur de la vidéo réelle dans After Effects et
 - Compléter `adobe-editing` (règles permanentes, checkpoints) : ce skill ne les répète pas, il les suppose chargées.
 - Détails de paramètres (tableaux complets) : `references/parametres-effets.md`.
 
-Rappel sur les outils : tous les `aeft_*` et `ppro_replace_with_ae_comp` / `ppro_import_ae_comp` sont **[prévu]**. En phase 1, seuls `ppro_get_sequence`, `ppro_cut_at`, `ppro_import_media`, `ppro_export_frame`, `ppro_checkpoint`/`ppro_rewind` sont **[existant]**. Les analyses lourdes (Track Motion, Roto Brush, Content-Aware Fill) se lancent dans l'interface : l'agent prépare, l'humain clique « Analyser », l'agent relit et termine.
+Rappel sur les outils : les `aeft_*` de base (import, calques, texte, formes, propriétés, images-clés, expressions, effets, précomposition, rendu, MOGRT) et `ppro_replace_with_ae_comp` / `ppro_import_ae_comp` sont **[existant]** ; il faut le panneau Adobe MCP ouvert dans After Effects. Les outils marqués **[prévu]** (masques, remappage temporel, caméra 3D…) n'existent pas encore. Les analyses lourdes (Track Motion, Roto Brush, Content-Aware Fill) se lancent dans l'interface : l'agent prépare, l'humain clique « Analyser », l'agent relit et termine.
 
 ## Principes
 1. **Un seul plan isolé par comp AE.** Couper le plan dans Premiere avant de l'envoyer (`ppro_cut_at`) : la comp liée hérite de la durée du clip, et un tracking court dérive moins.
@@ -45,11 +45,11 @@ Rappel sur les outils : tous les `aeft_*` et `ppro_replace_with_ae_comp` / `ppro
 Objectif : retoucher un plan dans AE sans le réexporter à chaque fois.
 1. `ppro_get_sequence` [existant] : repérer le clip, sa durée, ses pistes. Isoler : `ppro_cut_at` [existant] aux bornes si le clip est trop long. `ppro_checkpoint {label:"vers-ae"}` [existant].
 2. `ppro_replace_with_ae_comp {clipIds}` [prévu] (ou l'humain : clic droit > Remplacer par une composition After Effects). Premiere ouvre AE s'il est fermé, crée une comp liée aux réglages de la séquence, nommée « <projet> Linked Comp N », et remplace le clip par un média lié (icône dédiée). Si AE demande d'enregistrer : enregistrer le .aep à côté du projet Premiere, dans un dossier qui ne bougera plus.
-3. `aeft_get_comp` [prévu] : vérifier que la comp contient bien le métrage (bug connu en 25.6 : comp vide ; correctif 25.6.1 ; sinon relancer après avoir tué le processus DynamicLinkManager).
-4. Travailler dans AE (P3 à P14). `aeft_save_project` [prévu].
+3. `aeft_get_comp` [existant] : vérifier que la comp contient bien le métrage (bug connu en 25.6 : comp vide ; correctif 25.6.1 ; sinon relancer après avoir tué le processus DynamicLinkManager).
+4. Travailler dans AE (P3 à P14). `aeft_save_project` [existant].
 5. Retour Premiere : la timeline reflète la comp automatiquement ; Premiere jette ses prévisualisations précédentes du clip. Pour rouvrir plus tard : sélectionner le clip > Edit > Edit Original.
-6. Lecture saccadée ? `ppro_export_range` [prévu] n'est pas nécessaire : clic droit sur le clip > Render and Replace (Source : clips individuels ; Format : QuickTime ; preset ProRes ou CineForm ; destination à côté des médias). Pour reprendre la modification : Clip > Restore Unrendered (repère).
-Vérifier : `ppro_export_frame` [existant] à trois instants et comparer avec `aeft_export_frame` [prévu] aux mêmes temps.
+6. Lecture saccadée ? `ppro_export_range` [existant] n'est pas nécessaire : clic droit sur le clip > Render and Replace (Source : clips individuels ; Format : QuickTime ; preset ProRes ou CineForm ; destination à côté des médias). Pour reprendre la modification : Clip > Restore Unrendered (repère).
+Vérifier : `ppro_export_frame` [existant] à trois instants et comparer avec `aeft_export_frame` [existant] aux mêmes temps.
 
 Limites connues : versions différentes = pas de lien ; renommer la comp dans AE ne renomme pas l'élément dans Premiere (le lien tient) ; une comp peut être liée plusieurs fois ; comp liée créée depuis Premiere via File > Adobe Dynamic Link > New After Effects Composition = 30 s par défaut (Composition > Composition Settings pour changer) ; Dynamic Link est gourmand et parfois instable sur les projets lourds.
 
@@ -57,13 +57,13 @@ Limites connues : versions différentes = pas de lien ; renommer la comp dans AE
 Objectif : même résultat, sans lien vivant. À préférer pour les comps longues, lourdes (Roto Brush, Content-Aware Fill) ou livrées.
 1. Premiere : `ppro_export_range {start, end, preset: intermédiaire}` [prévu] avec poignées de 1–2 s (repère), ou l'humain exporte le sous-clip avec « Importer dans le projet ».
 2. AE : `aeft_import {paths}` [prévu] → `aeft_create_comp {fromFootage}` [prévu] → effets.
-3. `aeft_render_queue_add {outputModule: "ProRes 4444"/"PNG séquence" si alpha}` [prévu] → `aeft_render` [prévu].
+3. `aeft_render_queue_add {outputModule: "ProRes 4444"/"PNG séquence" si alpha}` [prévu] → `aeft_render` [existant].
 4. Premiere : `ppro_import_media {paths}` [existant] → `ppro_insert_clip {mode:"overwrite"}` [prévu] au même temps, même piste, ou l'humain : clic droit > Remplacer le métrage.
 Vérifier : durée identique à l'original (`ppro_get_sequence`), pas de trou ni de décalage audio.
 
 ### P3. Coller un élément sur un visage ou un objet (Track Motion)
 Objectif : un PNG, un texte ou une comp suit un point du plan.
-1. `aeft_get_comp` [prévu]. Regarder tout le plan (`aeft_export_frame` ×3) : la cible doit rester visible, contrastée, de forme stable.
+1. `aeft_get_comp` [existant]. Regarder tout le plan (`aeft_export_frame` ×3) : la cible doit rester visible, contrastée, de forme stable.
 2. `aeft_add_layer {type:"null", name:"TRK"}` [prévu]. Importer l'élément (`aeft_import`) et `aeft_set_layer {parent:"TRK"}`.
 3. Humain : Window > Tracker > Track Motion sur le métrage ; Track Type « Transform » ; cocher Position (+ Rotation/Scale si deux points). Zone de forme serrée sur le détail, zone de recherche de la taille du déplacement image à image. Déplacer le point d'attache si l'élément doit être décalé (ex. au-dessus de la tête). Analyze Forward. Si dérive : revenir à la dernière bonne image, replacer, relancer. Edit Target → nul TRK → Apply (X and Y).
 4. `aeft_get_property {layerId:"TRK", path:"Transform.Position"}` [prévu] : vérifier qu'il y a des keyframes sur toute la durée, sans saut > quelques px entre deux images (repère : un saut net = décrochage).
@@ -105,7 +105,7 @@ Vérifier : `aeft_export_frame` sur une image de mouvement rapide : bords de la 
 1. Humain : double-clic sur le calque (panneau Calque) ; Alt+W (Roto Brush, version 3.0 par défaut) ; choisir une image de base où le sujet est entier ; Ctrl-glisser pour la taille de brosse ; un trait au milieu du sujet ; Alt+trait pour retirer.
 2. Espace pour propager ; corriger sur la première image qui décroche (trait + ou −). Un trait hors de l'intervalle crée une nouvelle image de base.
 3. Bords fins (cheveux) : Refine Edge Tool (Alt+W pour cycler) sur les bords seulement.
-4. Agent : `aeft_set_property` [prévu] sur Roto Brush Matte : Feather (adoucit), Contrast, Shift Edges (+ élargit, − réduit), Reduce Chatter (bord qui tremble). Si bords mauvais : Enable Classic Controls, Edge Detection « Favor Predicted Edges » quand sujet et fond ont la même couleur.
+4. Agent : `aeft_set_property` [existant] sur Roto Brush Matte : Feather (adoucit), Contrast, Shift Edges (+ élargit, − réduit), Reduce Chatter (bord qui tremble). Si bords mauvais : Enable Classic Controls, Edge Detection « Favor Predicted Edges » quand sujet et fond ont la même couleur.
 5. Freeze quand c'est final : le cache (barres violettes) est enregistré avec le projet ; nouveaux traits ignorés tant que gelé.
 Vues : Alt+4 alpha, Alt+5 contour, Alt+6 recouvrement. Le sujet doit rester dans la boîte verte « Search Radius ».
 Vérifier : `aeft_export_frame` sur fond uni contrasté, début/milieu/fin ; chercher trous, bavures, bord qui clignote.
@@ -137,8 +137,8 @@ Appliquer sur un calque d'effets (`aeft_add_layer {type:"adjustment"}`) pour tou
 Vérifier : `aeft_export_frame` → l'élément a la même netteté, le même grain et la même direction d'ombre que le plan.
 
 ### P12. Stabilisation (Warp Stabilizer VFX)
-1. Clip à la taille de la comp, pas de time-stretch ; sinon `aeft_precompose` [prévu].
-2. `aeft_apply_effect {effect:"Warp Stabilizer VFX"}` [prévu] (l'analyse démarre d'elle-même : bannières « Analyzing » puis « Stabilizing ») ou Premiere : `ppro_stabilize` [prévu].
+1. Clip à la taille de la comp, pas de time-stretch ; sinon `aeft_precompose` [existant].
+2. `aeft_apply_effect {effect:"Warp Stabilizer VFX"}` [prévu] (l'analyse démarre d'elle-même : bannières « Analyzing » puis « Stabilizing ») ou Premiere : `ppro_stabilize` [existant].
 3. Défauts : Result Smooth Motion, Smoothness 50 %, Method Subspace Warp, Framing « Stabilize, Crop, Auto-scale ». Première passe conseillée : Smoothness 100 % puis descendre.
 4. Si gondolement : Method → Position, Scale, Rotation → Position. Si trop de zoom : Crop Less ↔ Smooth More de 50 % vers le bas par pas de 10 ; ou Framing « Synthesize Edges » (Smoothness bas, Synthesis Input Range ↑ si bords restent, Edge Feather ↑ si raccord visible).
 5. Jello/rolling shutter (DSLR) : Rolling Shutter Ripple → Enhanced Reduction (Perspective ou Subspace seulement). Résultat bof : Detailed Analysis.
@@ -146,7 +146,7 @@ Vérifier : `aeft_export_frame` → l'élément a la même netteté, le même gr
 Vérifier : `aeft_export_frame` ×3 : pas de bord noir, zoom raisonnable (Maximum Scale 150 % par défaut, repère), pas d'arrière-plan qui « respire ».
 
 ### P13. Ralenti (Time Stretch, Time Remap, Timewarp)
-1. Cadence source : `aeft_list_items` [prévu] → si 50/60 fps dans une comp 24/25, ralenti ×2 propre ; alternative sans effet : Interpret Footage > Conform to frame rate 24.
+1. Cadence source : `aeft_list_items` [existant] → si 50/60 fps dans une comp 24/25, ralenti ×2 propre ; alternative sans effet : Interpret Footage > Conform to frame rate 24.
 2. Simple : Layer > Time > Time Stretch, Stretch Factor 200 % = moitié ; ou `aeft_time_remap {keyframes}` [prévu] (Layer > Time > Enable Time Remapping) pour une rampe.
 3. Lissage : switch Frame Blending du calque + bouton de comp ; Frame Mix (rapide, fondu) ou Pixel Motion (lent, lisse). Qualité Best. Ne se met pas sur une précomp entière : l'activer sur les calques à l'intérieur.
 4. Rampe fine : `aeft_apply_effect {effect:"Timewarp", params:{Method:"Pixel Motion", Speed:50}}` puis `aeft_set_keyframes` sur Speed (50 → 25 → 50) avec ease ; Tuning : Vector Detail ↑ et Smoothing si bavures (repère). Flou : Pixel Motion Blur (Effect > Time), Shutter Control manuel.

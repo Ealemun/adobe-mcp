@@ -10,10 +10,17 @@ import { registerMediaTools } from './tools/media.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
-const INSTRUCTIONS = `adobe-mcp pilote Adobe Premiere Pro (tools ppro_*) et After Effects (tools aeft_*) via un panneau installé dans chaque application.
-Règles : 1) commencer par ppro_get_capabilities / aeft_get_capabilities ; 2) lire la séquence (ppro_get_sequence) avant de modifier ;
-3) annoncer le plan avant une opération destructive (coupes) et utiliser dryRun si l'utilisateur hésite ; 4) un checkpoint est créé automatiquement avant chaque coupe, proposer ppro_rewind en cas de doute ;
-5) les temps sont en secondes décimales ; 6) si un hôte n'est pas connecté, demander à l'utilisateur d'ouvrir Fenêtre > Extensions > Adobe MCP dans l'application.`;
+const INSTRUCTIONS = `adobe-mcp pilote Adobe Premiere Pro (tools ppro_*) et After Effects (tools aeft_*) via un panneau installé dans chaque application, plus des analyses locales (media_*).
+Règles :
+1) commencer par ppro_get_capabilities / aeft_get_capabilities ; si un hôte n'est pas connecté, demander à l'utilisateur d'ouvrir Fenêtre > Extensions > Adobe MCP dans l'application ;
+2) lire avant d'écrire : ppro_get_sequence (avec range/tracks sur les longues séquences), ppro_get_clip_effects, aeft_get_comp ; les identifiants de clips "V1/3" changent après chaque coupe ou suppression, relire avant d'enchaîner ;
+3) annoncer le plan avant une opération destructive (coupes, suppression de plages, remplacement) : dryRun renvoie le bilan ; un checkpoint est créé automatiquement et ppro_rewind permet de revenir en arrière ;
+4) vérifier après : relire la structure ou exporter une image (ppro_export_frame, ppro_export_frames + media_contact_sheet) ;
+5) temps en secondes décimales ; le pont aligne sur l'image la plus proche ;
+6) jump cut = ppro_export_audio → media_detect_silences → ppro_remove_ranges ; niveaux = ppro_export_audio → media_loudness ;
+7) noms d'effets/paramètres : anglais ou français courants acceptés ; en cas d'échec, la réponse liste les noms exacts ;
+8) After Effects : expressions testées avec aeft_validate_expression ; images-clés avec easing par défaut ; ppro_replace_with_ae_comp demande les deux panneaux ouverts.
+Le skill "adobe-editing" (et les skills de domaine) détaille les recettes.`;
 
 async function main() {
   const config = loadConfig();
@@ -32,11 +39,15 @@ async function main() {
 
   registerPproTools(server, bridge, config);
   registerAeftTools(server, bridge);
-  registerMediaTools(server);
+  registerMediaTools(server, config);
 
   server.registerResource({ uri: 'adobe://status', name: 'État du pont adobe-mcp', description: 'Hôtes connectés', read: async () => JSON.stringify(bridge.status(), null, 2) });
   server.registerResource({ uri: 'adobe://ppro/active-sequence', name: 'Séquence active Premiere', description: 'Structure de la séquence active',
                             read: async () => JSON.stringify(await bridge.call('ppro', 'sequence.get', {}), null, 2) });
+  server.registerResource({ uri: 'adobe://ppro/checkpoints', name: 'Sauvegardes de séquence', description: 'Checkpoints présents dans le projet Premiere',
+                            read: async () => JSON.stringify(await bridge.call('ppro', 'safety.listCheckpoints', {}), null, 2) });
+  server.registerResource({ uri: 'adobe://aeft/active-comp', name: 'Composition active After Effects', description: 'Calques de la composition active',
+                            read: async () => JSON.stringify(await bridge.call('aeft', 'comp.get', { depth: 1 }), null, 2) });
 
   bridge.on('host', (h) => server.log('info', `${h.app} ${h.appVersion} connecté (${h.capabilities.size} fonctions)`));
   bridge.on('hostgone', (h) => server.log('warning', `${h.app} déconnecté`));

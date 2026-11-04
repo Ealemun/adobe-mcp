@@ -2,7 +2,7 @@
 
 Piloter **Adobe Premiere Pro** et **After Effects** en langage naturel depuis un assistant IA compatible MCP. Tout tourne sur votre machine : pas de serveur distant, pas d'abonnement, pas de code téléchargé au démarrage.
 
-> Statut : **phase 1** — fonctionne sur Premiere Pro 2020 (testé), lecture du projet et de la timeline, coupes avec sauvegarde automatique, import, export d'image, retour arrière ; socle After Effects. Suite : `docs/05-roadmap.md`.
+> Statut : **phase 2** — 112 outils. Premiere Pro 2020 : lecture, montage (coupes à l'image près, jump cut automatique, placement, effets, images-clés, transitions, MOGRT, Auto Reframe), export et analyse audio locale ; After Effects : compositions, calques, texte, formes, animation, expressions, effets, rendu, MOGRT ; Dynamic Link (remplacer un clip par une composition). Testé au fur et à mesure sur Premiere 2020 : les fonctions qui passent par l'API non documentée (effets, transitions, vitesse) sont vérifiées après coup et renvoient une erreur claire si la version ne les accepte pas. Suite : `docs/05-roadmap.md`.
 
 ---
 
@@ -68,6 +68,21 @@ Un seul client MCP à la fois : si deux clients sont ouverts, chacun lance son s
 
 | Premiere Pro | After Effects |
 |---|---|
+| lire le projet, les chutiers, les séquences, la timeline (clips, effets, images-clés, marqueurs, sélection) | lire le projet et les compositions (calques, propriétés, images-clés, expressions) |
+| couper à l'image près, supprimer des plages (jump cut) avec fermeture des trous, désactiver, déplacer, rogner, lier/délier, changer la vitesse | créer des compositions et des calques (solide, texte, forme, nul, calque d'effets, métrage) |
+| placer des médias, des sons, des sous-titres (SRT), des MOGRT | texte et style, formes avec Trim Paths |
+| appliquer et régler des effets, animer par images-clés, transformations, punch-in, transitions, Lumetri, stabilisation, volume et automation | animer avec courbes d'accélération, expressions testées avant pose, effets, précomposition |
+| marqueurs et chapitres YouTube, pistes, séquences (créer, dupliquer, extraire une plage, Auto Reframe vertical) | rendu, propriétés essentielles et export MOGRT |
+| exporter une image, une série d'images, l'audio en WAV, une plage ou la séquence (direct ou Media Encoder) | image fixe pour contrôle visuel |
+| sauvegardes automatiques avant chaque opération destructive, retour arrière | duplication de composition |
+
+**Dynamic Link** : « Remplacer par une composition After Effects » et import de compositions (les deux panneaux ouverts).
+
+**Analyse locale, sans rien installer** : silences (jump cut), loudness EBU R128, planche-contact d'images. **Transcription** : si un Whisper local est installé (`pip install openai-whisper` ou whisper.cpp), `media_transcribe` l'utilise ; sinon l'assistant demande de transcrire dans Premiere et d'exporter un SRT.
+
+Pas encore : texte Essential Graphics créé de zéro dans Premiere (passer par un MOGRT ou par After Effects), détection de beats/scènes/visages, masques et tracking pilotés dans After Effects. Catalogue complet : `docs/03-catalogue-tools.md`.
+
+---|---|
 | lire le projet, les séquences, la timeline (clips, durées, marqueurs) | lire le projet et les compositions |
 | activer une séquence, déplacer la tête de lecture | créer une composition |
 | couper à des instants donnés (sauvegarde automatique avant) | exporter une image |
@@ -91,6 +106,7 @@ Puis, selon ce qui a changé (le message du commit le dit) :
 | Fichiers modifiés | À faire |
 |---|---|
 | `packages/mcp-server/…` | fermer et rouvrir le client MCP |
+| `packages/host-cep/jsx/…` et `packages/mcp-server/…` ensemble | relancer les deux : Premiere/After Effects et le client MCP |
 | `packages/host-cep/jsx/…` | quitter et relancer Premiere / After Effects |
 | `packages/host-cep/js/…`, `index.html` | fermer et rouvrir le panneau |
 | `skills/…` | rien (liés au dépôt) ; un nouveau skill ajouté : relancer `.\scripts\install.cmd` ; dans tous les cas, redémarrer le client MCP pour qu'il les recharge |
@@ -111,7 +127,7 @@ Dans le doute : fermer le client MCP et Premiere, puis tout rouvrir.
 | « Aucune séquence active » | aucune séquence ouverte dans la timeline | double-cliquer une séquence |
 | Une action échoue | voir le journal | journal du panneau (lignes ✗) et `%USERPROFILE%\.adobe-mcp\logs\` |
 
-**Test sans Premiere** : `node packages\mcp-server\test\smoke.js` vérifie le serveur avec un faux Premiere.
+**Test sans Premiere** : `cd packages\mcp-server` puis `npm test` vérifie la syntaxe ExtendScript (ES3) du panneau et le serveur avec un faux Premiere et un faux After Effects.
 **Test du serveur seul** : `node packages\mcp-server\src\index.js` le lance à la main (le panneau doit passer au vert) ; Ctrl+C pour l'arrêter. À n'utiliser que pour diagnostiquer.
 
 ---
@@ -141,10 +157,9 @@ Retire le panneau et les déclarations dans les clients MCP. Les sauvegardes de 
 ```
 adobe-mcp/
 ├── packages/
-│   ├── mcp-server/   # serveur MCP en Node.js pur (aucune dépendance) + pont WebSocket
-│   ├── host-cep/     # panneau Premiere / After Effects + bibliothèque ExtendScript (jsx/)
+│   ├── mcp-server/   # serveur MCP en Node.js pur (aucune dépendance) + pont WebSocket + analyses audio/image (src/workers)
+│   ├── host-cep/     # panneau Premiere / After Effects + bibliothèque ExtendScript (jsx/ppro/*.jsx, jsx/aeft.jsx)
 │   ├── host-uxp/     # (à venir) panneau UXP pour les versions récentes de Premiere
-│   └── workers/      # (à venir) analyse audio/vidéo : transcription, silences…
 ├── scripts/          # install.cmd, uninstall.cmd, clients.json
 ├── skills/           # instructions pour l'assistant
 └── docs/

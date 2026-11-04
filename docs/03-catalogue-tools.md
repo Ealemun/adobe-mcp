@@ -8,6 +8,22 @@ Conventions :
 
 Phase indicative : **P1** spike, **P2** primitives Premiere, **P3** workers, **P4** After Effects, **P5** UXP, **P6** confort.
 
+## État d'implémentation
+
+Les tools ci-dessous existent dans `packages/mcp-server` (112 au total, `tools/list`). Les tables qui suivent restent la référence des paramètres ; un tool absent de cette liste est encore à faire.
+
+**Premiere Pro** (72) : `ppro_add_markers`, `ppro_add_track`, `ppro_add_transition`, `ppro_alert`, `ppro_apply_effect`, `ppro_checkpoint`, `ppro_clear_keyframes`, `ppro_create_bin`, `ppro_create_sequence`, `ppro_cut_at`, `ppro_delete_clips`, `ppro_disable_clips`, `ppro_duplicate_sequence`, `ppro_export_audio`, `ppro_export_chapters`, `ppro_export_frame`, `ppro_export_frames`, `ppro_export_range`, `ppro_export_sequence`, `ppro_extract_range_to_sequence`, `ppro_get_active_sequence`, `ppro_get_audio_info`, `ppro_get_capabilities`, `ppro_get_clip_effects`, `ppro_get_item`, `ppro_get_markers`, `ppro_get_project`, `ppro_get_sequence`, `ppro_import_ae_comp`, `ppro_import_captions`, `ppro_import_media`, `ppro_insert_clip`, `ppro_insert_mogrt`, `ppro_keep_ranges`, `ppro_link_clips`, `ppro_list_checkpoints`, `ppro_list_effects`, `ppro_list_export_presets`, `ppro_list_items`, `ppro_list_mogrt_params`, `ppro_list_sequences`, `ppro_move_clip`, `ppro_move_items`, `ppro_place_clips`, `ppro_place_sfx`, `ppro_prune_checkpoints`, `ppro_punch_in`, `ppro_reframe_vertical`, `ppro_remove_disabled_clips`, `ppro_remove_effect`, `ppro_remove_markers`, `ppro_remove_ranges`, `ppro_rename_item`, `ppro_replace_with_ae_comp`, `ppro_rewind`, `ppro_save_project`, `ppro_seek`, `ppro_select_clips`, `ppro_set_active_sequence`, `ppro_set_clip_speed`, `ppro_set_clip_volume`, `ppro_set_effect_params`, `ppro_set_in_out`, `ppro_set_keyframes`, `ppro_set_lumetri`, `ppro_set_mogrt_params`, `ppro_set_track_state`, `ppro_set_transform`, `ppro_set_volume_keyframes`, `ppro_stabilize`, `ppro_trim_clip`, `ppro_unlink_clips`
+
+**After Effects** (33) : `aeft_add_layer`, `aeft_add_shape`, `aeft_apply_ease`, `aeft_apply_effect`, `aeft_bake_expression`, `aeft_checkpoint`, `aeft_clear_keyframes`, `aeft_create_comp`, `aeft_delete_layers`, `aeft_duplicate_layer`, `aeft_essential_props`, `aeft_export_frame`, `aeft_export_mogrt`, `aeft_get_capabilities`, `aeft_get_comp`, `aeft_get_project`, `aeft_get_property`, `aeft_import`, `aeft_list_comps`, `aeft_list_effects`, `aeft_list_items`, `aeft_precompose`, `aeft_remove_effect`, `aeft_render`, `aeft_render_queue_add`, `aeft_save_project`, `aeft_set_comp_settings`, `aeft_set_expression`, `aeft_set_keyframes`, `aeft_set_layer`, `aeft_set_property`, `aeft_set_text`, `aeft_validate_expression`
+
+**Média (analyse locale)** (6) : `media_contact_sheet`, `media_detect_silences`, `media_loudness`, `media_probe`, `media_transcribe`, `media_transcribe_status`
+
+**Serveur** (0) : 
+
+Écarts par rapport aux tables : `ppro_set_clip_gain` s'appelle `ppro_set_clip_volume` ; `ppro_export_range`/`ppro_export_sequence` prennent un preset `.epr` ou un nom/regex ; `ppro_insert_mogrt` / `ppro_set_mogrt_params` / `ppro_list_mogrt_params` fonctionnent sur un MOGRT déjà placé (clipId) ; `media_transcribe` nécessite un Whisper local (openai-whisper ou whisper.cpp) ; `media_contact_sheet` prend des PNG (pas de décodage vidéo).
+
+Non implémentés (et pourquoi) : `ppro_add_text` / `ppro_update_text` / `ppro_extract_texts` (pas d'API de création de texte Essential Graphics en ExtendScript : passer par MOGRT ou After Effects), `ppro_add_adjustment_layer` (pas d'API de création de calque d'effets), `ppro_get_captions` / `ppro_set_captions` / `ppro_export_captions` (API des légendes absente avant Premiere 15), `ppro_reframe_vertical` strategy "face" (pas de détection de visages), `media_detect_beats` / `media_detect_scenes` / `media_detect_faces` / `media_separate_stems` (nécessitent des bibliothèques externes), `aeft_set_mask` / `aeft_time_remap` / `aeft_add_text_animator` / `aeft_set_camera` (à venir).
+
 ---
 
 ## A. Premiere Pro — `ppro_*`

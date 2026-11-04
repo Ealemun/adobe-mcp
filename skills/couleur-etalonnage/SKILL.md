@@ -62,7 +62,7 @@ Vérification réussie si : pas de zone pleine à 0 ou 100, parade équilibrée 
 
 Objectif : tous les plans d'une scène ont le même contraste, la même balance, la même saturation.
 
-1. `ppro_export_frames {times: [un instant par clip], size: 640}` [prévu] → `media_contact_sheet` [prévu]. Regarder la planche : repérer le plan héros (éclairage représentatif) et les plans qui s'écartent (plus chaud, plus plat, plus saturé).
+1. `ppro_export_frames {times: [un instant par clip], size: 640}` [prévu] → `media_contact_sheet` [existant]. Regarder la planche : repérer le plan héros (éclairage représentatif) et les plans qui s'écartent (plus chaud, plus plat, plus saturé).
 2. Corriger le héros avec P1.
 3. Pour chaque autre plan, dans l'ordre : noirs alignés (parade), blancs alignés, gamma (ombres/médiums/hautes lumières via `ppro_set_lumetri {curves}` ou roues), puis peau.
 4. Alternative rapide : demander à l'utilisateur de lancer Color Match dans Premiere (Vue de comparaison → image de référence sur le héros → Appliquer la correspondance). Il écrit dans les roues chromatiques et leurs curseurs luma ; il ne touche pas (ou peu) à la saturation : aligner l'exposition et la saturation avant, affiner après.

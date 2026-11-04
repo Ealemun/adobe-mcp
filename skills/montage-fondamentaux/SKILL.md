@@ -46,7 +46,7 @@ Chaque règle : **quoi** → *pourquoi*. Les chiffres non sourcés sont marqués
 ### P1. Dérusher et sélectionner les meilleures prises
 Objectif : un index des rushes + une liste de « sélects » notés, sans encore monter.
 1. `ppro_get_project` [existant] puis `ppro_list_items {type:"video", includeMetadata:true}` [prévu] (ou `ppro_get_sequence` sur une séquence bout-à-bout) → durée, fps, nom de chaque rush.
-2. Pour chaque rush parlé : `ppro_export_audio` [existant] → `media_transcribe {wordTimestamps:true}` [prévu] ; pour chaque rush muet : `ppro_export_frames {every:2, size:640}` [prévu] → `media_contact_sheet` [prévu].
+2. Pour chaque rush parlé : `ppro_export_audio` [existant] → `media_transcribe {wordTimestamps:true}` [prévu] ; pour chaque rush muet : `ppro_export_frames {every:2, size:640}` [prévu] → `media_contact_sheet` [existant].
 3. Noter chaque prise sur 3 axes : **jeu/émotion** (priorité), **info** (la phrase est complète, sans faux départ), **technique** (net, exposé, son propre). À l'ours, ignorer la technique si l'émotion est là : un défaut se cache par un plan de coupe.
 4. Quand une phrase est dite plusieurs fois, garder par défaut la dernière prise complète sans hésitation ; conserver les hésitations qui portent une émotion.
 5. Écrire les sélects comme marqueurs : `ppro_add_markers [{start,end,name:"SEL ★★★ …", comment}]` [prévu] sur les clips sources, ou un fichier JSON d'index côté agent.
@@ -54,7 +54,7 @@ Objectif : un index des rushes + une liste de « sélects » notés, sans encore
 
 ### P2. Assembler l'ours (bout-à-bout)
 Objectif : la totalité de l'histoire dans l'ordre, trop long, sans musique ni effets.
-1. `ppro_checkpoint {label:"avant-ours"}` [existant] ; `ppro_create_sequence` [prévu] ou travailler dans la séquence active lue par `ppro_get_sequence` [existant].
+1. `ppro_checkpoint {label:"avant-ours"}` [existant] ; `ppro_create_sequence` [existant] ou travailler dans la séquence active lue par `ppro_get_sequence` [existant].
 2. Construire la liste `items[{nodeId, time, track, in, out}]` à partir des sélects, dans l'ordre du script/de la structure (P6). Couper **long** : +1 s de marge à chaque bord (repère).
 3. `ppro_place_clips {items}` [prévu] (fallback : `ppro_import_xml` [prévu] avec une séquence calculée). Pas de transition, pas de B-roll, pas de musique.
 4. Vérification : `ppro_get_sequence {range:[0,60]}` → aucun trou, aucun chevauchement non voulu ; durée totale annoncée à l'utilisateur avec le ratio vs. cible (attendre > 1,5–2×).
@@ -62,9 +62,9 @@ Objectif : la totalité de l'histoire dans l'ordre, trop long, sans musique ni e
 ### P3. Affiner : du rough cut au fine cut
 Objectif : passer de « tout y est » à « rien n'est en trop », par passes mono-objectif.
 1. Passe **dialogue/parole** : `media_transcribe` sur l'export de la séquence → repérer faux départs, redites, « euh » mécaniques → `ppro_remove_ranges {ripple:true}` [prévu] après `ppro_checkpoint` [existant]. Couper entre deux groupes de sens, jamais au milieu d'une idée.
-2. Passe **rythme** : lire `ppro_get_sequence` [existant] et calculer durée de chaque plan, coupes/minute, plan le plus long. Comparer aux tableaux § Paramètres ; resserrer les têtes/queues de plan (`ppro_trim_clip` [prévu]) avant de supprimer des plans entiers.
+2. Passe **rythme** : lire `ppro_get_sequence` [existant] et calculer durée de chaque plan, coupes/minute, plan le plus long. Comparer aux tableaux § Paramètres ; resserrer les têtes/queues de plan (`ppro_trim_clip` [existant]) avant de supprimer des plans entiers.
 3. Passe **raccords** : pour chaque coupe suspecte, `ppro_export_frame` [existant] à `t-0.04` et `t+0.04` (dernière/première frame) → vérifier regard, direction, échelle, position (P4).
-4. Passe **couverture** : masquer les sauts restants par cutaway/B-roll (`ppro_insert_clip {mode:"overwrite", videoTrack:"V2"}` [prévu]) ou punch-in (`ppro_punch_in` [prévu]).
+4. Passe **couverture** : masquer les sauts restants par cutaway/B-roll (`ppro_insert_clip {mode:"overwrite", videoTrack:"V2"}` [prévu]) ou punch-in (`ppro_punch_in` [existant]).
 5. Seulement ensuite : musique témoin, ambiances, J/L-cuts (P5). Puis notes extérieures (P8) ; 4 versions de fine cut est un ordre de grandeur courant.
 6. Vérification : durée dans la cible, aucune coupe « presque bonne » laissée, rapport des passes à l'utilisateur.
 
@@ -72,20 +72,20 @@ Objectif : passer de « tout y est » à « rien n'est en trop », par passes mo
 Objectif : décider si la coupe entre A et B est invisible, et la corriger sinon.
 1. `ppro_export_frame {time: fin de A}` et `{time: début de B}` [existant] ; regarder les deux images côte à côte.
 2. Check-list : (a) même côté de l'axe ? (b) angle ≥ 30° ou échelle nettement différente ? (c) regard/direction cohérents ? (d) le point d'attention (visage, objet) est-il au même endroit de l'écran ou dans la direction du mouvement (eye trace) ? (e) lumière/balance des blancs proches ? (f) le geste est-il à la même phase ?
-3. Si (a) échoue : insérer un plan neutre/large avant B. Si (b) échoue : punch-in sur B (`ppro_set_transform {scale}` [prévu]) ou cutaway. Si (f) échoue : déplacer la coupe de quelques frames dans le mouvement (`ppro_trim_clip` [prévu], `ppro_cut_at` [existant] pour re-couper).
-4. Vérification : nouvel export des deux frames ; lecture de la séquence son coupé (via export `ppro_export_range` [prévu]) : si un personnage semble « se téléporter », l'axe est encore franchi.
+3. Si (a) échoue : insérer un plan neutre/large avant B. Si (b) échoue : punch-in sur B (`ppro_set_transform {scale}` [prévu]) ou cutaway. Si (f) échoue : déplacer la coupe de quelques frames dans le mouvement (`ppro_trim_clip` [existant], `ppro_cut_at` [existant] pour re-couper).
+4. Vérification : nouvel export des deux frames ; lecture de la séquence son coupé (via export `ppro_export_range` [existant]) : si un personnage semble « se téléporter », l'axe est encore franchi.
 
 ### P5. Poser un J-cut ou un L-cut
 Objectif : faire déborder le son d'un plan sur l'autre pour lisser une transition ou montrer une réaction.
 1. `ppro_get_sequence {tracks:["V1","A1"]}` [existant] → identifier la coupe vidéo à `t`.
-2. `ppro_unlink_clips` [prévu] sur les deux clips.
+2. `ppro_unlink_clips` [existant] sur les deux clips.
 3. J-cut : `ppro_trim_clip {clipId: B.audio, start: t - d}` ; L-cut : `ppro_trim_clip {clipId: A.audio, end: t + d}` [prévu]. `d` = 0,5–2 s pour un dialogue, jusqu'à la phrase entière pour une voix off sur un montage (repère).
 4. Fondu audio court (≤ 4 frames, repère) à la jonction : `ppro_add_transition {name:"Constant Power", duration:0.08}` [prévu].
 5. Vérification : `ppro_get_sequence` montre le chevauchement audio ; `ppro_export_audio {range:[t-3,t+3]}` [existant] → écoute/transcription sans mot coupé.
 
 ### P6. Structurer une vidéo courte (hook → montée → résolution)
 Objectif : une timeline qui promet, tient en haleine et paie.
-1. À partir du transcript (`media_transcribe` [prévu]) ou du brief, lister les **beats** (micro-événements) et choisir le **point de bascule**.
+1. À partir du transcript (`media_transcribe` [existant]) ou du brief, lister les **beats** (micro-événements) et choisir le **point de bascule**.
 2. Choisir le hook : la phrase ou l'image la plus forte, souvent prise au milieu des rushes ; la placer à `t=0` (vertical : avant 3 s ; long : avant 15 s, promesse explicite, pas de générique).
 3. Ordonner : acte 1 (promesse, enjeu) → acte 2 (3–5 sous-séquences, bascule à ~50 %) → acte 3 (climax, résolution, dernier plan qui boucle ou appelle la suite).
 4. Placer des changements (B-roll, échelle, graphique, musique) tous les 10–30 s ; en vertical, un changement visuel toutes les 1–2 s.
@@ -102,7 +102,7 @@ Objectif : un rythme qui sert l'intention, pas un rythme « par habitude ».
 
 ### P8. Juger qu'un montage « marche »
 Objectif : des critères observables, pas un ressenti.
-1. **Test muet** : exporter (`ppro_export_range` [prévu]) et regarder sans son — l'action et la géographie restent-elles claires ? Puis **test aveugle** : écouter sans image — le récit se suit-il ?
+1. **Test muet** : exporter (`ppro_export_range` [existant]) et regarder sans son — l'action et la géographie restent-elles claires ? Puis **test aveugle** : écouter sans image — le récit se suit-il ?
 2. **Résumé en une phrase** : si l'agent ne peut pas dire de quoi parle la scène en une phrase, la lisibilité est en cause.
 3. **Grille Rule of Six** sur 5 coupes tirées au hasard : émotion/histoire/rythme/œil/2D/3D, note 0–2 chacune.
 4. **Métriques timeline** (`ppro_get_sequence` [existant]) : coupes/min, plan max, temps avant la première info utile, position de la bascule, ratio parole/B-roll.

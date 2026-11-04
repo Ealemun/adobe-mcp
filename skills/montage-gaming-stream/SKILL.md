@@ -44,13 +44,13 @@ Détails complémentaires : `references/formats-et-zones-sures.md` (tableaux pix
 Objectif : passer d'une VOD de 4–8 h à une vidéo regardable, sans temps morts, avec des parties identifiables.
 
 1. `ppro_get_capabilities` [existant] puis `ppro_get_sequence {range, tracks}` [existant] par tranches de 30 min.
-2. Récupérer les repères du stream : marqueurs posés en direct (Alt+M ou `/marker` sur Twitch, visibles dans Video Producer), notes horodatées, clips créés par le chat. Les importer comme marqueurs : `ppro_add_markers` [prévu].
+2. Récupérer les repères du stream : marqueurs posés en direct (Alt+M ou `/marker` sur Twitch, visibles dans Video Producer), notes horodatées, clips créés par le chat. Les importer comme marqueurs : `ppro_add_markers` [existant].
 3. Exporter la voix : `ppro_export_audio {tracks: voix, preset: "transcription"}` [existant] → `media_transcribe {wordTimestamps: true}` [prévu]. Chercher dans le texte les mots de réaction (« let's go », « non », « incroyable », rires) : chaque pic = candidat.
 4. Détecter les temps morts : `media_detect_silences {minDuration: 20, noiseDb: -40}` [prévu] sur la voix ; croiser avec `media_detect_scenes` [prévu] (écrans de chargement, menus, pauses). Un silence voix > 20 s sans action visible = coupe candidate (repère).
 5. Classer chaque segment : garder / hésitation / couper (clip.dor.gg). Conserver 10–30 s de contexte avant chaque moment fort (besttwitchextensions). Préférer les parties fortes complètes (une manche gagnée, un boss) aux fragments.
 6. Présenter le plan : nombre de plages, durée avant/après, liste des parties. Attendre l'accord.
 7. `ppro_checkpoint {label: "vod-clean"}` [existant] → `ppro_remove_ranges {ranges, tracks: "all", ripple: true}` [prévu] (ou `ppro_cut_at` [existant] + suppression manuelle guidée si les primitives manquent).
-8. Marquer les parties : `ppro_add_markers {type: "Chapter"}` [prévu] → `ppro_export_chapters` [prévu] ; une transition courte (dip 6–10 images, repère) ou un titre `ppro_add_text` [prévu] entre deux parties.
+8. Marquer les parties : `ppro_add_markers {type: "Chapter"}` [prévu] → `ppro_export_chapters` [existant] ; une transition courte (dip 6–10 images, repère) ou un titre `ppro_add_text` [prévu] entre deux parties.
 9. Vérifier : `ppro_get_sequence {range: [0, 60]}` [existant] et `ppro_export_frame` [existant] à chaque jonction ; écouter les 2 s autour de chaque coupe (pas de mot tronqué).
 
 ### B. Monter un best-of / highlights (2–5 min, 16:9)
@@ -60,14 +60,14 @@ Objectif : passer d'une VOD de 4–8 h à une vidéo regardable, sans temps mort
 3. Trim : ~5 s par clip, du juste-avant à l'aboutissement ; couper l'errance avant l'action et le silence après (clip.dor.gg, eklipse).
 4. Ordre : deuxième meilleur clip en ouverture (action dans les 3 premières s), montée, meilleur clip au pic, baisse courte, fin forte. Varier modes et situations.
 5. Placement : `ppro_place_clips {items}` [prévu] ; sinon `ppro_import_media` [existant] puis guidage de l'utilisateur.
-6. Ralenti ou plan tenu sur les 1–2 plus gros moments uniquement ; `ppro_set_clip_speed` [prévu].
+6. Ralenti ou plan tenu sur les 1–2 plus gros moments uniquement ; `ppro_set_clip_speed` [existant].
 7. Légendes minimales : situation, compte, réaction, grandes et loin des bords (`ppro_add_text` [prévu]).
-8. Vérifier avec `ppro_export_frames {every: 2}` [prévu] → `media_contact_sheet` [prévu] : aucun plan noir, aucun écran de menu, aucun HUD coupé.
+8. Vérifier avec `ppro_export_frames {every: 2}` [prévu] → `media_contact_sheet` [existant] : aucun plan noir, aucun écran de menu, aucun HUD coupé.
 
 ### C. Edit rythmé sur musique (build-up, drop, speed ramps)
 
 1. Choisir la musique **avant** de monter ; elle dicte la structure (eklipse, videoproc). Prévoir 10–15 clips pour 90 s, 25–40 pour 3 min.
-2. `media_detect_beats {path}` [prévu] → BPM, temps forts, sections. `ppro_add_markers` [prévu] : couleur par type (beat, downbeat, drop). Manuel : marqueurs à la touche M pendant la lecture, puis Clip > Automate to Sequence > « At Unnumbered Markers » (Adobe Community).
+2. `media_detect_beats {path}` [prévu] → BPM, temps forts, sections. `ppro_add_markers` [existant] : couleur par type (beat, downbeat, drop). Manuel : marqueurs à la touche M pendant la lecture, puis Clip > Automate to Sequence > « At Unnumbered Markers » (Adobe Community).
 3. Structure type (onsetengine) : intro 5–10 s de plans d'ambiance (écran de sélection, plan large), build-up avec plans B coupés sur les temps, drop = plans A en coupes franches rapides, breakdown = ralentis et changements de point de vue.
 4. Densité : en phonk, coupe toutes les 4 temps ; en dubstep, longs builds puis drop dense (onsetengine). Hors drop, 1 coupe par temps fort ; sur le drop, plans < 0,5 s (voir recette `adobe-editing`).
 5. Caler les sons du jeu (tirs, impacts) sur les beats : détection d'onsets sur l'audio du jeu, puis ajuster la vitesse ou l'in-point du clip (videoproc).
@@ -79,12 +79,12 @@ Objectif : passer d'une VOD de 4–8 h à une vidéo regardable, sans temps mort
 
 | Effet | Valeurs | Appels adobe-mcp |
 |---|---|---|
-| Speed ramp | ralenti 40–50 % (flux optique fiable à ≥ 50 %), accéléré 200–300 % ; 800–1 000 % sur une transition fouettée ; images-clés Bézier, « oreilles » étirées (motionarray, 4kshooters, stingray) | `ppro_speed_ramp {keyframes}` [prévu], `ppro_set_clip_speed` [prévu] |
+| Speed ramp | ralenti 40–50 % (flux optique fiable à ≥ 50 %), accéléré 200–300 % ; 800–1 000 % sur une transition fouettée ; images-clés Bézier, « oreilles » étirées (motionarray, 4kshooters, stingray) | `ppro_speed_ramp {keyframes}` [prévu], `ppro_set_clip_speed` [existant] |
 | Freeze frame | hold de 0,3–1 s (micro-replay nikke.gg) ; segment par défaut 2 s ; cadre + texte + léger zoom 105 % (repère) | `ppro_export_frame` [existant] + `ppro_add_image_overlay` [prévu] ; ou time remap avec image-clé « hold » |
-| Zoom d'impact | +3 à +5 % en 2–3 images, retour en 4–6 images (nikke.gg ; durées repère) ; snap zoom jusqu'à 200 % sans perte visible (Vashi) | `ppro_set_keyframes {effect: "Motion", prop: "Scale"}` [prévu], `ppro_punch_in` [prévu] |
-| Shake | 2–3 images, amplitude 10–20 px en 1080p (durée clip.dor.gg ; amplitude repère) | `ppro_set_keyframes {Position}` [prévu] ; AE : `wiggle(fréquence, amplitude)` sur un calque d'ajustement, `aeft_set_expression` [prévu] |
+| Zoom d'impact | +3 à +5 % en 2–3 images, retour en 4–6 images (nikke.gg ; durées repère) ; snap zoom jusqu'à 200 % sans perte visible (Vashi) | `ppro_set_keyframes {effect: "Motion", prop: "Scale"}` [prévu], `ppro_punch_in` [existant] |
+| Shake | 2–3 images, amplitude 10–20 px en 1080p (durée clip.dor.gg ; amplitude repère) | `ppro_set_keyframes {Position}` [prévu] ; AE : `wiggle(fréquence, amplitude)` sur un calque d'ajustement, `aeft_set_expression` [existant] |
 | Flash | 1 image blanche sur le drop, 1 seule fois par edit (clip.dor.gg) ; variante dip to white 3–4 images (repère) | `ppro_add_adjustment_layer` [prévu] + opacité, ou `ppro_add_transition {name: "Dip to White"}` [prévu] |
-| Coupe sèche | retirer 2 images avant l'impact (Vashi) | `ppro_trim_clip` [prévu] |
+| Coupe sèche | retirer 2 images avant l'impact (Vashi) | `ppro_trim_clip` [existant] |
 
 Toujours : `ppro_checkpoint` [existant] avant, `ppro_export_frame` [existant] aux instants clés après, et un SFX associé (procédure H).
 
@@ -93,14 +93,14 @@ Toujours : `ppro_checkpoint` [existant] avant, `ppro_export_frame` [existant] au
 1. Lire le HUD : `ppro_export_frame` [existant] en jeu → repérer minimap, vie, munitions, kill feed, scoreboard, chat.
 2. Choisir le coin libre (clip.dor.gg) : bas-gauche si minimap à droite ; bas-droite si minimap à gauche ou chat en bas-gauche ; haut-gauche si scoreboard / kill log en haut-droite. Décoller la cam du bord de quelques dizaines de px (repère).
 3. Taille 15–20 % de la largeur (≈ 290–380 px sur 1920), ratio conservé ; bord fin ; opacité des panneaux secondaires 60–80 % (streamhub).
-4. Mettre en avant une réaction : alterner « cam plein cadre » 1–3 s (repère) sur le pic vocal, puis retour. Si la cam est incrustée dans l'enregistrement : `ppro_set_transform {scale, position}` [prévu] ou crop de la zone cam dupliquée sur V2 (cutsio) ; prévenir de la perte de netteté (Adobe Community). Si une piste cam séparée existe : `ppro_insert_clip` [prévu] en overwrite sur V2.
-5. Repérer les pics : `media_transcribe` [prévu] + énergie vocale ; 1 mise en avant toutes les 8–15 s max (recette auto-zoom).
+4. Mettre en avant une réaction : alterner « cam plein cadre » 1–3 s (repère) sur le pic vocal, puis retour. Si la cam est incrustée dans l'enregistrement : `ppro_set_transform {scale, position}` [prévu] ou crop de la zone cam dupliquée sur V2 (cutsio) ; prévenir de la perte de netteté (Adobe Community). Si une piste cam séparée existe : `ppro_insert_clip` [existant] en overwrite sur V2.
+5. Repérer les pics : `media_transcribe` [existant] + énergie vocale ; 1 mise en avant toutes les 8–15 s max (recette auto-zoom).
 6. Vérifier : frames avant/après chaque bascule, cam jamais sur le HUD, visage dans la zone sûre.
 
 ### F. Overlays et HUD
 
 - Zones à préserver : centre de l'image (réticule, action), minimap, vie/munitions, scoreboard et kill feed même s'ils n'apparaissent que brièvement (streamhub).
-- Infos incrustées (score, timer, nom de la partie) : bandeau fin en haut ou en bas, 2–4 s pour une alerte, 60–80 % d'opacité pour un panneau (streamhub) ; `ppro_insert_mogrt` [prévu] ou `ppro_add_text` [prévu].
+- Infos incrustées (score, timer, nom de la partie) : bandeau fin en haut ou en bas, 2–4 s pour une alerte, 60–80 % d'opacité pour un panneau (streamhub) ; `ppro_insert_mogrt` [existant] ou `ppro_add_text` [prévu].
 - Jeux non 16:9 (4:3, 8:7) : 25–35 % de l'écran est libre, y placer cam et infos (r/Twitch).
 - Export : PNG pour les images fixes, WebM pour les overlays animés avec transparence (techradar).
 - Vérifier avec `media_ocr_frames` [prévu] que le texte incrusté ne chevauche pas un texte du jeu.
@@ -110,7 +110,7 @@ Toujours : `ppro_checkpoint` [existant] avant, `ppro_export_frame` [existant] au
 1. `ppro_export_audio` [existant] → `media_transcribe {wordTimestamps: true}` [prévu] sur la voix seule (jamais sur le mix).
 2. Garder les phrases courtes de réaction ; retirer les « euh » ; ≤ 5 mots par ligne, 2 lignes max, ≥ 0,6 s par ligne (recette captions).
 3. Style : sans-serif grasse, contour épais ou fond plein, hauteur ≥ 1/20 de la largeur ; blanc + contour noir en haut du cadre pour l'accroche d'ouverture (clip.dor.gg, fluxnote).
-4. `ppro_captions_to_graphics {style, wordsPerLine: 4, highlight: true}` [prévu] ou `ppro_import_captions` [prévu].
+4. `ppro_captions_to_graphics {style, wordsPerLine: 4, highlight: true}` [prévu] ou `ppro_import_captions` [existant].
 5. Relire : `ppro_extract_texts` [prévu] → corriger noms propres et termes du jeu → `ppro_set_captions` [prévu].
 
 ### H. Sound design
@@ -118,7 +118,7 @@ Toujours : `ppro_checkpoint` [existant] avant, `ppro_export_frame` [existant] au
 1. Lister les instants : coupes de drop, zooms, bascules cam, transitions de parties.
 2. Choisir : whoosh (mouvement, transition), impact grave (coupe de drop, kill), riser (10–30 s avant un drop ou une révélation, filmeditingpro), click/métal (rechargement), sub-bass (explosion) (nikke.gg).
 3. Placer : whoosh démarre 3–6 images avant la coupe et la traverse (repère) ; impact sur la première image du nouveau plan ; riser se termine exactement sur le climax (sozai). `ppro_place_sfx {items}` [prévu].
-4. Niveaux : SFX en crêtes −6 à −3 dB, sous la voix ; ordre de priorité du mix : voix > SFX clés > musique > ambiance (sfxengine). `ppro_set_clip_gain` [prévu].
+4. Niveaux : SFX en crêtes −6 à −3 dB, sous la voix ; ordre de priorité du mix : voix > SFX clés > musique > ambiance (sfxengine). `ppro_set_clip_volume` [existant].
 5. Limiter à 2–3 moments par clip court ; vérifier au casque que le mix sans musique reste intelligible.
 
 ### I. Déclinaison verticale (Shorts, TikTok, Reels)

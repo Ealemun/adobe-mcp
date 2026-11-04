@@ -6,7 +6,7 @@ description: Monter une interview, un podcast vidéo ou un talking head, surtout
 
 Ce skill complète `adobe-editing` (règles permanentes : lire avant d'écrire, checkpoint, vérifier). Pour le détail du son, charger aussi `audio-montage` ; pour les titres et sous-titres, `titres-texte-sous-titres` ; pour les extraits verticaux, `montage-vertical-shorts` ; pour la sortie, `export-livraison-workflow`.
 
-Légende des outils : **[existant]** = disponible en phase 1 ; **[prévu]** = dans le catalogue mais pas encore livré. N'annoncer comme faisable tout de suite que le premier groupe ; pour le reste, guider l'utilisateur (section « Comment un humain le fait »).
+Légende des outils : **[existant]** = disponible ; **[prévu]** = pas encore livré. N'annoncer comme faisable tout de suite que le premier groupe ; pour le reste, guider l'utilisateur (section « Comment un humain le fait »).
 
 ## Quand utiliser ce skill
 
@@ -72,7 +72,7 @@ Légende des outils : **[existant]** = disponible en phase 1 ; **[prévu]** = da
 Objectif : savoir ce qu'on a avant de couper.
 1. `ppro_get_capabilities`, `ppro_get_project`, `ppro_list_sequences` **[existant]**.
 2. `ppro_list_items {type: "video"}` **[prévu]** pour voir les rushs ; sinon demander à l'utilisateur la liste des caméras et de l'audio externe.
-3. Nommer et ranger : un chutier par caméra, étiquette « Angle » A/B/C, un sous-dossier audio. `ppro_create_bin`, `ppro_move_items`, `ppro_rename_item` **[prévu]**. À défaut, guider à la main.
+3. Nommer et ranger : un chutier par caméra, étiquette « Angle » A/B/C, un sous-dossier audio. `ppro_create_bin`, `ppro_move_items`, `ppro_rename_item` **[existant]**. À défaut, guider à la main.
 4. Repérer les prises utilisables (couleur de chutier : une couleur pour « retenu », une pour « écarté ») : `ppro_set_item_metadata` **[prévu]**.
 5. Dérusher dans une séquence séparée, pas dans la séquence finale.
 Vérifier : `ppro_list_items` montre une structure par caméra et aucun média hors ligne (`ppro_find_items` **[prévu]**).
@@ -89,7 +89,7 @@ Vérifier : `ppro_get_sequence` **[existant]** liste un clip multicam ; `ppro_ex
 ### P3. Détecter et corriger une dérive
 Objectif : pas plus de ~2 images d'écart en fin d'enregistrement.
 1. Mesurer l'écart au début et à la fin avec un point sonore identifiable (clap, claquement de mains, mot fort) : `ppro_export_frame` **[existant]** sur chaque caméra à ces instants ; `media_waveform_image` **[prévu]** pour aligner visuellement.
-2. Si l'écart est constant : glisser la piste (`ppro_move_clip` **[prévu]**).
+2. Si l'écart est constant : glisser la piste (`ppro_move_clip` **[existant]**).
 3. Si l'écart grandit : couper à un silence toutes les 30 à 40 min et recaler chaque segment (`ppro_cut_at` **[existant]** + `ppro_move_clip`), ou étirer la piste audio (guidage manuel : Audition, outil d'étirement, voir plus bas).
 Vérifier : nouvelle mesure à la fin ; écart ≤ 2 images (repère).
 
@@ -111,7 +111,7 @@ Vérifier : durée moyenne par plan dans la plage visée ; aucune coupe < 2 s sa
 Objectif : appliquer la feuille de coupes dans la séquence de montage.
 1. `ppro_checkpoint {label: "avant-bascules"}` **[existant]**.
 2. `ppro_cut_at {times, tracks: "video", includeAudio: false}` **[existant]** aux instants de la feuille, puis choisir l'angle par segment : `ppro_set_multicam_angle` **[prévu, absent du catalogue actuel]**. Tant que cet outil n'existe pas : produire la liste « instant → angle » et guider l'utilisateur (bascule en direct avec les touches numériques, voir plus bas) ; ou alternative : séquence XML calculée hors Premiere puis `ppro_import_xml` **[prévu]**.
-3. Alternative sans multicam : une piste vidéo par caméra, activer le clip de la caméra du locuteur et désactiver les autres (`ppro_disable_clips` **[prévu]**), puis `ppro_remove_disabled_clips` **[prévu]**.
+3. Alternative sans multicam : une piste vidéo par caméra, activer le clip de la caméra du locuteur et désactiver les autres (`ppro_disable_clips` **[existant]**), puis `ppro_remove_disabled_clips` **[existant]**.
 4. Garder le son continu : ne jamais couper la piste de référence en même temps que l'image.
 Vérifier : `ppro_get_sequence {range}` **[existant]** ; `ppro_export_frame` **[existant]** une image par bascule ; contrôler qu'aucun trou noir ni angle faux n'apparaît.
 
@@ -120,7 +120,7 @@ Choisir selon le critère :
 | Situation | Solution |
 |---|---|
 | Du B-roll pertinent existe, ou l'orateur évoque un objet | Plan de coupe à cheval sur la coupe |
-| Source 4K, sortie 1080p, pas de B-roll | Punch-in 15 à 20 % sur un des deux côtés (`ppro_punch_in` **[prévu]**) |
+| Source 4K, sortie 1080p, pas de B-roll | Punch-in 15 à 20 % sur un des deux côtés (`ppro_punch_in` **[existant]**) |
 | Plan unique, fond fixe, courte pause, tête alignée | Morph cut (`ppro_add_transition {name: "Morph Cut"}` **[prévu]**) |
 | Réaction de l'autre personne disponible | Plan d'écoute 2 à 3 s |
 Étapes : repérer les coupes après nettoyage de la parole (`ppro_get_sequence`), proposer la solution par coupe, appliquer par lot, vérifier.
@@ -135,20 +135,20 @@ Vérifier : aucune coupe de B-roll au milieu d'un mot ; pas de répétition du m
 
 ### P8. Split-screen (duo, table ronde)
 Objectif : montrer deux ou trois personnes en même temps quand une interaction rapide ou un rire le justifie.
-1. `ppro_add_track` **[prévu]**, deux clips superposés, recadrage de chaque visage dans sa moitié (`ppro_set_transform` **[prévu]**).
+1. `ppro_add_track` **[existant]**, deux clips superposés, recadrage de chaque visage dans sa moitié (`ppro_set_transform` **[existant]**).
 2. Utiliser surtout pour les remises de parole rapides ou les rires, pas comme plan permanent.
 Vérifier : visages complets dans chaque moitié, yeux à la même hauteur approximative.
 
 ### P9. Son : voix et niveau final
-1. Séparer pistes par locuteur ; `ppro_get_audio_info` **[prévu]** ; `media_loudness` **[prévu]** par locuteur.
+1. Séparer pistes par locuteur ; `ppro_get_audio_info` **[existant]** ; `media_loudness` **[existant]** par locuteur.
 2. Égaliser les écarts entre voix ; cible −16 LUFS stéréo / −19 mono ; crête ≤ −1 dBFS.
 3. Réduction de bruit légère, compression modérée (voir `audio-montage`).
 4. Musique de générique : ducking (`ppro_auto_duck` **[prévu]**).
 Vérifier : `media_loudness` sur l'export audio de la séquence entière.
 
 ### P10. Extraits courts depuis l'épisode
-1. Poser des marqueurs sur les moments forts (`ppro_add_markers` **[prévu]**).
-2. `ppro_extract_range_to_sequence` **[prévu]**, puis suivre `montage-vertical-shorts`.
+1. Poser des marqueurs sur les moments forts (`ppro_add_markers` **[existant]**).
+2. `ppro_extract_range_to_sequence` **[existant]**, puis suivre `montage-vertical-shorts`.
 3. Garder les durées de plan à 3 à 5 s dans l'extrait, plan large pour établir.
 
 ## Paramètres de référence

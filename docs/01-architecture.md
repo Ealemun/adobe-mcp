@@ -49,7 +49,7 @@ L'agent IA (le client MCP) est le seul décideur. Il voit la timeline sous forme
   <Host Name="AEFT" Version="[15.0,99.9]" />
   ```
   Bornes ouvertes pour ne pas être bloqué par les futures versions. `RequiredRuntime CSXS 9.0` (compatible CEP 9 à 12, soit Premiere/After Effects 2019 et suivants ; CEP 8 pour 2018 en abaissant cette valeur).
-- **Pas de Node.js dans le panneau** : il lit `bridge.json` via `cep.fs` et parle au serveur en WebSocket natif. Le JS ne fait qu'appeler `evalScript("ADOBE_MCP.call(<json>)")`. Toute fonction appelable est **dans le dépôt** (`jsx/ppro.jsx`, `jsx/aeft.jsx`), versionnée, auditable ; aucun code reçu par le réseau n'est exécuté.
+- **Pas de Node.js dans le panneau** : il lit `bridge.json` via `cep.fs` et parle au serveur en WebSocket natif. Le JS ne fait qu'appeler `evalScript("ADOBE_MCP.call(<json>)")`. Toute fonction appelable est **dans le dépôt** (`jsx/ppro/*.jsx`, `jsx/aeft.jsx`), versionnée, auditable ; aucun code reçu par le réseau n'est exécuté.
 - UI du panneau : état de connexion, hôte détecté, journal des appels, bouton « Reconnecter », port modifiable. Rien d'autre.
 - Bibliothèque ExtendScript écrite directement en ES3 (pas de chaîne de build) ; `json2.js` embarqué car ExtendScript n'a pas `JSON` natif. Un passage à TypeScript (`types-for-adobe`, Bolt CEP) reste possible plus tard si la lib grossit.
 

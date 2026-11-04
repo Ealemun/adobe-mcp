@@ -91,6 +91,7 @@ ADOBE_MCP.util = {
 #include "ppro/effects.jsx"
 #include "ppro/insert.jsx"
 #include "ppro/dynamiclink.jsx"
+#include "ppro/extra.jsx"
 #include "ppro/markers.jsx"
 #include "ppro/export.jsx"
 #include "ppro/render.jsx"

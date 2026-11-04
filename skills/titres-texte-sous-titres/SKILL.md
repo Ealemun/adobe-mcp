@@ -58,7 +58,7 @@ Objectif : un texte lisible, dans la zone de sécurité, affiché assez longtemp
 3. Calculer la durée : `max(mots × 0,3 s + anim, durée cible du tableau)`. Caler l'entrée sur une coupe ou un temps fort, la sortie avant la coupe suivante.
 4. Exporter l'image à l'instant visé (`ppro_export_frame {time}` [existant]) et regarder où est le sujet : ne pas couvrir un visage, une bouche, un élément d'interface filmé.
 5. Créer le calque : `ppro_add_text {text, time, duration, track: V2+, style:{font, size, color, align, stroke|shadow|background, position}}` [prévu]. Position en zone title safe ; texte centré pour un titre, aligné à gauche pour un call-out latéral.
-6. Entrée/sortie : `ppro_set_keyframes` [prévu] sur Opacity (0→100 sur 0,4 s ease-out) et Position (+40 px → 0) ; sortie 0,3 s ease-in. Ou MOGRT générique via `ppro_insert_mogrt` [prévu].
+6. Entrée/sortie : `ppro_set_keyframes` [existant] sur Opacity (0→100 sur 0,4 s ease-out) et Position (+40 px → 0) ; sortie 0,3 s ease-in. Ou MOGRT générique via `ppro_insert_mogrt` [existant].
 7. Vérifier : `ppro_export_frame` à t+0,5 s (après l'entrée) et à la fin de la fenêtre stable ; relire `ppro_extract_texts` [prévu] pour l'orthographe.
 
 Vérification : texte entièrement dans title safe, contraste visible sur l'image exportée, durée ≥ mots × 0,3 s après soustraction des animations.
@@ -67,7 +67,7 @@ Vérification : texte entièrement dans title safe, contraste visible sur l'imag
 
 Objectif : présenter une personne sans gêner l'image.
 
-1. Repérer la première prise de parole de la personne (transcription `media_transcribe {diarize: true}` [prévu] ou marqueurs `ppro_get_markers` [prévu]).
+1. Repérer la première prise de parole de la personne (transcription `media_transcribe {diarize: true}` [prévu] ou marqueurs `ppro_get_markers` [existant]).
 2. Exporter une image à cet instant [existant] : vérifier que le bas-gauche est libre (sinon bas-droite, ou plus haut ; jamais au niveau des yeux du sujet, jamais sur la bouche en gros plan).
 3. Paramètres : début = parole + 1 à 2 s, durée 4–6 s (3 s mini, 8 s maxi), pas à cheval sur une coupe (`ppro_get_sequence {range}` pour lister les coupes autour).
 4. Avec un MOGRT de projet : `ppro_list_mogrt_params {path}` → `ppro_insert_mogrt {path, time, duration, track, params:{Nom, Fonction, Couleur}}` [prévu].
@@ -87,7 +87,7 @@ Objectif : une piste de légendes propre, conforme aux normes, exportable.
 4. Écrire le SRT (UTF-8, timecodes `HH:MM:SS,mmm`) et l'importer : `ppro_import_captions {srtPath, format: "subtitle"}` [prévu]. Alternative actuelle : écrire le SRT, puis demander à l'utilisateur de l'importer (Fenêtre > Texte > Légendes > Importer des légendes à partir d'un fichier).
 5. Relecture : `ppro_get_captions` [prévu] → corriger noms, chiffres, ponctuation → `ppro_set_captions {edits}` [prévu]. Ne jamais corriger un nom propre sans l'avoir demandé.
 6. Style de piste (si incrustation) : police sans-serif, 40–60 px à 1080p, blanc, contour 2 px ou boîte noire 70–80 %, centré, 10–15 % du bas en 16:9 ; `ppro_import_captions {style}` ou `ppro_update_text` [prévu].
-7. Livraison : `ppro_export_captions {format: "srt"|"vtt"}` [prévu] pour un fichier soft ; `ppro_burn_captions` [prévu] + `ppro_export_sequence` [prévu] pour l'incrustation.
+7. Livraison : `ppro_export_captions {format: "srt"|"vtt"}` [prévu] pour un fichier soft ; `ppro_burn_captions` [prévu] + `ppro_export_sequence` [existant] pour l'incrustation.
 
 Vérification : aucun sous-titre > 42 car./ligne, > 2 lignes, > 20 CPS, < 1 s ; aucun chevauchement ; début/milieu/fin synchronisés sur image exportée + lecture par l'utilisateur.
 

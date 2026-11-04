@@ -107,7 +107,7 @@ Départ commun à toutes les procédures : `ppro_get_capabilities` [existant], `
 2. Poser au moins deux clés : `ppro_set_keyframes {clipId, effect: "Motion", prop: "Scale", keyframes:[{t, value, interp}]}` [prévu] ou `ppro_set_transform {clipIds, scale, at}` [prévu].
 3. Régler les courbes : Ease Out sur la première clé, Ease In sur la dernière. Auto Bézier spatial pour les trajets courbes ; linéaire spatial pour des angles vifs ; Maintien pour un saut.
 4. Durée type d'un mouvement d'interface/texte : 0,3 à 0,5 s (repère). Plus long = plus calme.
-5. Vérifier : relire les clés (`ppro_get_clip_effects` [prévu]), exporter 3 images à t0, milieu, t1 (`ppro_export_frame` [existant]). Détecter : valeur finale non atteinte, saut brutal, trajet en zigzag (clés trop nombreuses).
+5. Vérifier : relire les clés (`ppro_get_clip_effects` [existant]), exporter 3 images à t0, milieu, t1 (`ppro_export_frame` [existant]). Détecter : valeur finale non atteinte, saut brutal, trajet en zigzag (clés trop nombreuses).
 
 ### P4. Stabiliser un plan
 
@@ -130,7 +130,7 @@ Départ commun à toutes les procédures : `ppro_get_capabilities` [existant], `
 3. Régler Contour progressif (adoucit le bord), Expansion (agrandit/réduit), Opacité du masque, et « Inversé » si l'effet doit s'appliquer à l'extérieur.
 4. Lancer le suivi : « Suivre le masque sélectionné vers l'avant » (et vers l'arrière si le point de départ est au milieu).
 5. Pour une révélation progressive : image-clé du flou à une valeur forte (repère d'un tutoriel : 10) à l'instant de départ, puis une seconde clé à 0 quelques secondes plus tard.
-6. Outils : `ppro_apply_effect` [prévu], `ppro_set_effect_params {clipId, effect, params}` [prévu]. Le tracé de masque et le suivi n'ont pas d'outil dédié dans le catalogue de phase 1 : proposer le guidage manuel (T4).
+6. Outils : `ppro_apply_effect` [existant], `ppro_set_effect_params {clipId, effect, params}` [prévu]. Le tracé de masque et le suivi n'ont pas d'outil dédié dans le catalogue de phase 1 : proposer le guidage manuel (T4).
 7. Vérifier : exporter une image toutes les 0,5 s sur la durée du flou (`ppro_export_frames {every: 0.5}` [prévu]) puis les regarder en planche ; chercher toute image où le visage ressort. Désélectionner le masque avant de juger le rendu (sinon la zone s'affiche en surbrillance).
 
 ### P6. Ralenti, accéléré, inversion
@@ -147,7 +147,7 @@ Départ commun à toutes les procédures : `ppro_get_capabilities` [existant], `
 
 **Objectif** : alterner ralenti et accéléré autour d'un moment clé, de façon fluide.
 
-1. Identifier le moment clé (impact, saut, geste). Placer une marque (`ppro_add_markers` [prévu]).
+1. Identifier le moment clé (impact, saut, geste). Placer une marque (`ppro_add_markers` [existant]).
 2. Déplacer le clip sur une piste libre (le changement de vitesse modifie sa longueur).
 3. Activer le remappage temporel (Vitesse) : `ppro_speed_ramp {clipId, keyframes:[{t, speed}]}` [prévu].
 4. Structure type en trois paliers : approche normale ou rapide, ralenti sur le moment clé (50 % ou moins si la cadence le permet), retour rapide. Poser des clés de part et d'autre.
@@ -177,7 +177,7 @@ Départ commun à toutes les procédures : `ppro_get_capabilities` [existant], `
 2. Dupliquer la séquence ou le clip avant de remplacer (conserver l'original).
 3. Sélectionner les clips à envoyer ; si multicaméra, les aplatir d'abord.
 4. Lancer le remplacement : `ppro_replace_with_ae_comp {clipIds, compName}` [prévu]. After Effects crée une comp liée, enregistrée dans un projet .aep (le sauvegarder dans un dossier stable).
-5. Travailler dans After Effects : `aeft_get_comp` [prévu], `aeft_apply_effect` [prévu], etc. (voir `after-effects-effets-video`).
+5. Travailler dans After Effects : `aeft_get_comp` [existant], `aeft_apply_effect` [existant], etc. (voir `after-effects-effets-video`).
 6. Revenir dans Premiere : le clip se met à jour sans export.
 7. Si la timeline devient lente ou si on termine : « Rendre et remplacer » vers un intermédiaire de qualité (ProRes 422 ou 422 HQ ; 4444 si transparence), puis, si besoin de retoucher, « Restaurer le non rendu ».
 8. Vérifier : lecture de la zone liée, absence de médias hors ligne, couleurs identiques avant/après (si décalage : mode fusion en gamma 1,0 et 32 bits dans After Effects, ou désactiver « Composite en couleur linéaire » dans les réglages de séquence).

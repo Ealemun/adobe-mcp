@@ -88,6 +88,17 @@ try {
   check('ppro_replace_with_ae_comp (orchestration)', rep.comp === 'cam_A lié' && rep.aepPath === 'C:/test/test.aep' && rep.checkpoint?.checkpointId, rep.comp);
   wsAe.close();
 
+  // Planche-contact à partir de PNG générés (décodage + encodage PNG maison)
+  const { encodePng, decodePng } = await import('../src/workers/png.js');
+  const pngPaths = [0, 1, 2].map((i) => { const w = 64, h = 36, rgb = Buffer.alloc(w * h * 3); for (let k = 0; k < w * h; k++) { rgb[k * 3] = i * 80; rgb[k * 3 + 1] = 120; rgb[k * 3 + 2] = 255 - i * 80; } const p = join(tmpdir(), `adobe-mcp-f${i}.png`); writeFileSync(p, encodePng({ width: w, height: h, rgb })); return p; });
+  const dec = decodePng(pngPaths[1]);
+  check('png decode/encode', dec.width === 64 && dec.height === 36 && dec.rgb[0] === 80 && dec.rgb[2] === 175);
+  const sheet = await callTool('media_contact_sheet', { frames: pngPaths, cols: 2, thumbWidth: 100 });
+  const sheetMeta = JSON.parse(sheet.content[0].text);
+  check('media_contact_sheet', sheetMeta.rows === 2 && sheet.content[1]?.type === 'image', `${sheetMeta.cols}x${sheetMeta.rows}`);
+  const stt = JSON.parse((await callTool('media_transcribe_status', {})).content[0].text);
+  check('media_transcribe_status', 'engine' in stt, stt.engine || 'aucun moteur');
+
   const res = await rpc('resources/read', { uri: 'adobe://ppro/active-sequence' });
   check('resources/read', res.result?.contents?.[0]?.text?.includes('Montage test'));
 

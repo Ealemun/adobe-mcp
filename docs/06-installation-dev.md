@@ -65,7 +65,7 @@ Débogage : un fichier `.debug` à la racine du panneau expose un port Chrome De
   </DispatchInfoList>
 </ExtensionManifest>
 ```
-Le `ScriptPath` (`jsx/index.jsx`) est chargé par l'hôte ; il inclut `ppro.jsx` et `aeft.jsx`, chacun ne s'active que dans son application (`BridgeTalk.appName`). Le panneau n'active pas Node.js : il lit `bridge.json` via `cep.fs` et parle au serveur en WebSocket natif.
+Le `ScriptPath` (`jsx/index.jsx`) est chargé par l'hôte ; il inclut les modules `ppro/*.jsx` et `aeft.jsx`, chacun ne s'active que dans son application (`BridgeTalk.appName`). Le panneau n'active pas Node.js : il lit `bridge.json` via `cep.fs` et parle au serveur en WebSocket natif.
 
 ## 5. After Effects : préférences et mode sans panneau
 - Préférences > Scripts et expressions > **Autoriser les scripts à écrire des fichiers et à accéder au réseau** : nécessaire pour les exports de JSON et le mode `-r`.
