@@ -93,6 +93,7 @@ Puis, selon ce qui a changé (le message du commit le dit) :
 | `packages/mcp-server/…` | fermer et rouvrir le client MCP |
 | `packages/host-cep/jsx/…` | quitter et relancer Premiere / After Effects |
 | `packages/host-cep/js/…`, `index.html` | fermer et rouvrir le panneau |
+| `skills/…` | relancer `.\scripts\install.cmd` (recopie les skills) |
 | `scripts/…` | relancer `.\scripts\install.cmd` |
 
 Dans le doute : fermer le client MCP et Premiere, puis tout rouvrir.

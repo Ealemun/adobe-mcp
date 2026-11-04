@@ -24,7 +24,7 @@ $ErrorActionPreference = 'Stop'
 $Root     = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Panel    = Join-Path $Root 'packages\host-cep'
 $Server   = Join-Path $Root 'packages\mcp-server\src\index.js'
-$Skill    = Join-Path $Root 'skills\adobe-editing'
+$SkillsRoot = Join-Path $Root 'skills'
 $ExtDir   = Join-Path $env:APPDATA 'Adobe\CEP\extensions'
 $Link     = Join-Path $ExtDir 'com.adobe-mcp.panel'
 $Clients  = Get-Content (Join-Path $PSScriptRoot 'clients.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -96,7 +96,12 @@ if ($Remove) {
       $r = Invoke-Native $c.cli @('mcp','remove','--scope','user',$ServerId)
       if ($r.Code -eq 0) { Ok "entrée '$ServerId' retirée via $($c.cli)" }
     }
-    if ($c.skillsDir) { $sd = Join-Path (Expand $c.skillsDir) 'adobe-editing'; if (Test-Path $sd) { Remove-Item $sd -Recurse -Force; Ok "skill retiré : $sd" } }
+    if ($c.skillsDir) {
+      foreach ($dir in (Get-ChildItem -Directory $SkillsRoot | Where-Object { $_.Name -notlike '_*' })) {
+        $sd = Join-Path (Expand $c.skillsDir) $dir.Name
+        if (Test-Path $sd) { Remove-Item $sd -Recurse -Force; Ok "skill retiré : $sd" }
+      }
+    }
   }
   if ($Purge) { $home1 = Join-Path $env:USERPROFILE '.adobe-mcp'; if (Test-Path $home1) { Remove-Item $home1 -Recurse -Force; Ok "supprimé : $home1" } }
   Write-Host "`nDésinstallation terminée. PlayerDebugMode reste activé (sans effet si aucun panneau non signé n'est installé)." -ForegroundColor Green
@@ -154,10 +159,14 @@ foreach ($c in $Clients) {
     if ($c.restartHint) { Warn "$($c.name) : $($c.restartHint)" }
   }
   if ($c.skillsDir) {
-    $sd = Join-Path (Expand $c.skillsDir) 'adobe-editing'
-    New-Item -ItemType Directory -Force -Path $sd | Out-Null
-    Copy-Item (Join-Path $Skill '*') $sd -Recurse -Force
-    Ok "$($c.name) : instructions de montage copiées dans $sd"
+    # Copie chaque dossier de skills\ (sauf les fichiers de travail commençant par _)
+    $base = Expand $c.skillsDir; $n = 0
+    foreach ($dir in (Get-ChildItem -Directory $SkillsRoot | Where-Object { $_.Name -notlike '_*' })) {
+      $sd = Join-Path $base $dir.Name
+      New-Item -ItemType Directory -Force -Path $sd | Out-Null
+      Copy-Item (Join-Path $dir.FullName '*') $sd -Recurse -Force; $n++
+    }
+    Ok "$($c.name) : $n skills de montage copiés dans $base"
   }
 }
 if ($configured -eq 0) {

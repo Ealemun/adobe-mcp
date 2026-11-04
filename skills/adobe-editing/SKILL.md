@@ -5,6 +5,25 @@ description: Monter une vidéo dans Adobe Premiere Pro ou créer des animations 
 
 # Monter avec adobe-mcp
 
+Ce skill porte les règles permanentes et les enchaînements de base. Pour le savoir-faire de monteur (chiffres, critères, erreurs à éviter), charger **en plus** le skill du domaine concerné :
+
+| Demande | Skill à charger |
+|---|---|
+| rythme, coupes, continuité, structure, dérushage | `montage-fondamentaux` |
+| vidéo YouTube longue, rétention, hook, B-roll, zooms, chapitres | `montage-youtube-retention` |
+| Shorts, TikTok, Reels, vertical, 9:16, sous-titres mot à mot | `montage-vertical-shorts` |
+| gaming, stream, VOD, highlights, edit sur musique, speed ramp | `montage-gaming-stream` |
+| niveaux, LUFS, voix, musique, ducking, SFX, nettoyage audio | `audio-montage` |
+| couleur, Lumetri, LUT, étalonnage, match caméras, LOG | `couleur-etalonnage` |
+| titres, lower thirds, texte à l'écran, sous-titres, MOGRT | `titres-texte-sous-titres` |
+| transitions, effets Premiere, keyframes, stabilisation, masques | `transitions-effets-premiere` |
+| animation, motion design, expressions, typo cinétique (After Effects) | `after-effects-motion-design` |
+| tracking, effets sur un visage, détourage, fond vert, Dynamic Link | `after-effects-effets-video` |
+| interview, podcast, talking head, multicam | `interview-podcast-multicam` |
+| export, bitrate, presets plateforme, proxys, organisation du projet | `export-livraison-workflow` |
+
+Chaque skill de domaine marque les outils `[existant]` ou `[prévu]` : n'annoncer que ce qui est `[existant]` comme faisable immédiatement, et proposer le guidage manuel (section « Comment un humain le fait ») pour le reste.
+
 ## Règles permanentes
 
 1. **Lire avant d'écrire.** Commencer par `ppro_get_capabilities` (hôte connecté ? version ?) puis `ppro_get_sequence` (ou `aeft_get_comp`). Ne jamais supposer l'état de la timeline.
