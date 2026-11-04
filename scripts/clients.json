@@ -1,9 +1,14 @@
 [
   {
     "name": "Claude Desktop",
-    "detect": ["%APPDATA%\\Claude", "%LOCALAPPDATA%\\AnthropicClaude"],
-    "configFile": "%APPDATA%\\Claude\\claude_desktop_config.json",
-    "configKey": "mcpServers"
+    "detect": ["%APPDATA%\\Claude", "%LOCALAPPDATA%\\AnthropicClaude", "%LOCALAPPDATA%\\Packages\\Claude_*\\LocalCache\\Roaming\\Claude", "%LOCALAPPDATA%\\Packages\\AnthropicClaude*\\LocalCache\\Roaming\\Claude"],
+    "configFiles": [
+      "%LOCALAPPDATA%\\Packages\\Claude_*\\LocalCache\\Roaming\\Claude\\claude_desktop_config.json",
+      "%LOCALAPPDATA%\\Packages\\AnthropicClaude*\\LocalCache\\Roaming\\Claude\\claude_desktop_config.json",
+      "%APPDATA%\\Claude\\claude_desktop_config.json"
+    ],
+    "configKey": "mcpServers",
+    "restartHint": "quitter complètement l'application (icône de la barre des tâches > Quitter) puis la relancer pour charger le serveur."
   },
   {
     "name": "Claude Code",
@@ -14,19 +19,19 @@
   {
     "name": "Cursor",
     "detect": ["%USERPROFILE%\\.cursor"],
-    "configFile": "%USERPROFILE%\\.cursor\\mcp.json",
+    "configFiles": ["%USERPROFILE%\\.cursor\\mcp.json"],
     "configKey": "mcpServers"
   },
   {
     "name": "Windsurf",
     "detect": ["%USERPROFILE%\\.codeium\\windsurf"],
-    "configFile": "%USERPROFILE%\\.codeium\\windsurf\\mcp_config.json",
+    "configFiles": ["%USERPROFILE%\\.codeium\\windsurf\\mcp_config.json"],
     "configKey": "mcpServers"
   },
   {
     "name": "VS Code (Copilot)",
     "detect": ["%APPDATA%\\Code\\User"],
-    "configFile": "%APPDATA%\\Code\\User\\mcp.json",
+    "configFiles": ["%APPDATA%\\Code\\User\\mcp.json"],
     "configKey": "servers"
   }
 ]
