@@ -16,7 +16,7 @@ Règles : 1) commencer par ppro_get_capabilities / aeft_get_capabilities ; 2) li
 
 async function main() {
   const config = loadConfig();
-  const bridge = new Bridge({ port: config.bridge.port, callTimeoutMs: config.calls.timeoutMs, serverVersion: VERSION });
+  const bridge = new Bridge({ port: process.env.ADOBE_MCP_PORT !== undefined ? Number(process.env.ADOBE_MCP_PORT) : config.bridge.port, callTimeoutMs: config.calls.timeoutMs, serverVersion: VERSION });
   await bridge.start();
 
   const server = new McpServer({ name: 'adobe-mcp', version: VERSION, instructions: INSTRUCTIONS });

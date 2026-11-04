@@ -18,7 +18,7 @@
   var app = appId === 'PPRO' ? 'ppro' : appId === 'AEFT' ? 'aeft' : 'unknown';
   var appVersion = env.appVersion || '?';
 
-  var ws = null, pingTimer = null, reconnectTimer = null, manualPort = null;
+  var ws = null, pingTimer = null, reconnectTimer = null, manualPort = null, quietFail = 0;
   var $ = function (id) { return document.getElementById(id); };
 
   $('host').textContent = '— ' + (app === 'ppro' ? 'Premiere Pro' : app === 'aeft' ? 'After Effects' : appId) + ' ' + appVersion;
@@ -78,7 +78,8 @@
     var port = manualPort || (bridge && bridge.port) || DEFAULT_PORT;
     var token = (bridge && bridge.token) || '';
     $('port').value = port;
-    if (!bridge) log('bridge.json introuvable : le serveur MCP est-il lancé ? (port ' + port + ' par défaut)', 'muted');
+    if (!bridge) log('Serveur MCP non lancé (pas de bridge.json). Lancez votre client MCP. Essai sur le port ' + port + '.', 'muted');
+    else log('Serveur annoncé sur le port ' + port + ' (pid ' + bridge.pid + ', démarré ' + String(bridge.startedAt || '').replace('T', ' ').slice(0, 19) + ')', 'muted');
 
     setStatus('Connexion au serveur MCP (port ' + port + ')…', 'wait');
     try { ws = new WebSocket('ws://127.0.0.1:' + port); }
@@ -93,7 +94,7 @@
     };
     ws.onmessage = function (ev) {
       var msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
-      if (msg.type === 'welcome') { setStatus('Connecté au serveur MCP (port ' + port + ')', 'ok'); log('connecté, id ' + msg.hostId); return; }
+      if (msg.type === 'welcome') { quietFail = 0; setStatus('Connecté au serveur MCP (port ' + port + ')', 'ok'); log('connecté, id ' + msg.hostId); return; }
       if (msg.type === 'pong') return;
       if (msg.type === 'error') { setStatus('Refusé : ' + msg.message, 'ko'); log('erreur serveur : ' + msg.message); return; }
       if (msg.type === 'call') {
@@ -111,7 +112,13 @@
       }
     };
     ws.onerror = function () { /* onclose suit */ };
-    ws.onclose = function () { setStatus('Déconnecté — nouvelle tentative dans 3 s', 'ko'); clearInterval(pingTimer); scheduleReconnect(); };
+    ws.onclose = function () {
+      var wasOpen = $('dot').className.indexOf('ok') >= 0;
+      setStatus('Déconnecté — nouvelle tentative dans 3 s', 'ko');
+      if (wasOpen) log('Connexion perdue (serveur MCP arrêté ?)');
+      else if (!quietFail++) log('Aucun serveur sur le port ' + port + ' : le client MCP est-il ouvert ? (nouvel essai toutes les 3 s)');
+      clearInterval(pingTimer); scheduleReconnect();
+    };
   }
   function scheduleReconnect() { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, RECONNECT_MS); }
 

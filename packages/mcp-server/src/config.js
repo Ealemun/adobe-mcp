@@ -14,7 +14,7 @@ export function userDataDir() {
   if (p === 'darwin') return join(homedir(), 'Library', 'Application Support');
   return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
 }
-export const BRIDGE_FILE = join(userDataDir(), 'adobe-mcp', 'bridge.json');
+export const BRIDGE_FILE = process.env.ADOBE_MCP_BRIDGE_FILE || join(userDataDir(), 'adobe-mcp', 'bridge.json');
 
 export const DEFAULT_CONFIG = {
   bridge: { port: 8765 },

@@ -2,10 +2,16 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { startFakeHost } from './fake-host.js';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+// Isolation : le test n'écrit jamais le bridge.json réel et ne prend pas le port 8765.
+process.env.ADOBE_MCP_BRIDGE_FILE = join(mkdtempSync(join(tmpdir(), 'adobe-mcp-test-')), 'bridge.json');
+process.env.ADOBE_MCP_PORT = '0';
+const { startFakeHost } = await import('./fake-host.js');
 
 const serverPath = fileURLToPath(new URL('../src/index.js', import.meta.url));
-const proc = spawn(process.execPath, [serverPath], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ADOBE_MCP_CONFIG: '' } });
+const proc = spawn(process.execPath, [serverPath], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env } });
 proc.stderr.on('data', (d) => process.stderr.write('[server] ' + d));
 const rl = createInterface({ input: proc.stdout });
 const pending = new Map(); let nextId = 1;
