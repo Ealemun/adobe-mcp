@@ -1,5 +1,5 @@
 // Tools MCP After Effects (phase 1 : socle minimal).
-import { readFileSync, statSync } from 'node:fs';
+import { imageContent } from '../files.js';
 import { text } from '../mcp.js';
 
 export function registerAeftTools(server, bridge) {
@@ -58,9 +58,7 @@ export function registerAeftTools(server, bridge) {
     handler: async (a) => {
       const { inline = true, ...args } = a;
       const r = await call('export.frame', args, { timeoutMs: 120000 });
-      const content = [{ type: 'text', text: JSON.stringify(r) }];
-      if (inline && statSync(r.path).size <= 4_500_000) content.push({ type: 'image', data: readFileSync(r.path).toString('base64'), mimeType: 'image/png' });
-      return { content };
+      return imageContent(r, { inline });
     }
   });
 }

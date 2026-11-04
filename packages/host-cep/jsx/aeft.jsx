@@ -79,10 +79,10 @@
   F['export.frame'] = function (a) {
     var c = findComp(a.compId);
     var t = (a.time === undefined || a.time === null) ? c.time : Number(a.time);
-    var path = a.path || (U.tempDir() + '/aeframe_' + U.stamp() + '.png');
+    var path = U.outPath(a.path || (U.tempDir() + '/aeframe_' + U.stamp() + '.png'));
     c.saveFrameToPng(t, new File(path));
-    var f = new File(path);
-    if (!f.exists) throw ADOBE_MCP.err('EXPORT_FAILED', 'Image non produite : ' + path);
+    var f = U.waitForFile(path, 30000);
+    if (!f) throw ADOBE_MCP.err('EXPORT_FAILED', 'Image non produite : ' + path);
     return { path: f.fsName, time: U.round(t, 4), bytes: f.length };
   };
 

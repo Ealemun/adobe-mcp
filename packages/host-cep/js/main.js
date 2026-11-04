@@ -86,6 +86,8 @@
     catch (e) { setStatus('Impossible d\'ouvrir le WebSocket', 'ko'); scheduleReconnect(); return; }
 
     ws.onopen = function () {
+      var fresh = readBridgeFile();               // le serveur écrit bridge.json juste après avoir ouvert le port
+      if (fresh && fresh.port === port) token = fresh.token || token;
       capabilities().then(function (caps) {
         send({ type: 'hello', protocol: PROTOCOL, token: token, app: app, appVersion: String(caps.version || appVersion),
                bridge: 'cep', bridgeVersion: BRIDGE_VERSION, os: navigator.platform, capabilities: caps.fns || [] });

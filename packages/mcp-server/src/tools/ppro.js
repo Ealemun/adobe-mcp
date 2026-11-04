@@ -1,5 +1,5 @@
 // Tools MCP Premiere Pro (phase 1 : spike).
-import { readFileSync, statSync } from 'node:fs';
+import { imageContent } from '../files.js';
 import { text } from '../mcp.js';
 
 const TRACKS_SCHEMA = {
@@ -106,7 +106,7 @@ export function registerPproTools(server, bridge, config) {
 
   server.registerTool({
     name: 'ppro_export_frame', title: 'Exporter une image',
-    description: 'Exporte une image fixe (PNG) de la séquence à l\'instant donné (défaut : tête de lecture) et la renvoie pour inspection visuelle, avec son chemin.',
+    description: 'Exporte une image fixe (PNG, pleine résolution) de la séquence à l\'instant donné (défaut : tête de lecture) et la renvoie pour inspection visuelle. Par défaut le fichier va dans le dossier temporaire ; ne pas passer de path dans le dossier du projet sauf demande de l\'utilisateur.',
     inputSchema: {
       type: 'object', additionalProperties: false,
       properties: {
@@ -118,13 +118,7 @@ export function registerPproTools(server, bridge, config) {
     handler: async (a) => {
       const { inline = true, ...args } = a;
       const r = await call('export.frame', args, { timeoutMs: 60000 });
-      const content = [{ type: 'text', text: JSON.stringify(r) }];
-      if (inline) {
-        const bytes = statSync(r.path).size;
-        if (bytes <= 4_500_000) content.push({ type: 'image', data: readFileSync(r.path).toString('base64'), mimeType: 'image/png' });
-        else content[0].text += `\nImage trop lourde pour être renvoyée en ligne (${bytes} octets) : ouvrir le fichier.`;
-      }
-      return { content };
+      return imageContent(r, { inline });
     }
   });
 

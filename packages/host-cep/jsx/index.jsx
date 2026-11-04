@@ -57,6 +57,23 @@ ADOBE_MCP.util = {
   ticksToSeconds: function (t) { return Number(t) / ADOBE_MCP.TICKS_PER_SECOND; },
   pad2: function (n) { return (n < 10 ? '0' : '') + n; },
   fileExists: function (p) { return new File(p).exists; },
+  // Chemin natif normalisé (séparateurs de l'OS) ; crée le dossier parent si besoin.
+  outPath: function (p) { var f = new File(p); if (!f.parent.exists) f.parent.create(); return f.fsName; },
+  // Attend qu'un fichier existe et que sa taille ne bouge plus (écriture terminée). Renvoie le File ou null.
+  waitForFile: function (p, timeoutMs) {
+    var waited = 0, last = -1, stable = 0, f;
+    while (waited < (timeoutMs || 15000)) {
+      f = new File(p);
+      if (f.exists) {
+        var len = f.length;
+        if (len > 0 && len === last) { if (++stable >= 2) return f; } else stable = 0;
+        last = len;
+      }
+      $.sleep(150); waited += 150;
+    }
+    f = new File(p);
+    return f.exists && f.length > 0 ? f : null;
+  },
   ensureFolder: function (p) { var f = new Folder(p); if (!f.exists) f.create(); return f; },
   // Dossier temporaire du projet : <Temp>/adobe-mcp
   tempDir: function () { var f = new Folder(Folder.temp.fsName + '/adobe-mcp'); if (!f.exists) f.create(); return f.fsName; },

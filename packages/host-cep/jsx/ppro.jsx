@@ -237,14 +237,16 @@
   F['export.frame'] = function (a) {
     var seq = requireSequence(a.sequenceId);
     var t = (a.time === undefined || a.time === null) ? seq.getPlayerPosition().seconds : Number(a.time);
-    var path = a.path || (U.tempDir() + '/frame_' + U.stamp() + '.png');
+    var path = U.outPath(a.path || (U.tempDir() + '/frame_' + U.stamp() + '.png'));
+    if (!/\.png$/i.test(path)) path += '.png';
+    var playhead = safe(function () { return seq.getPlayerPosition().ticks; }, null);
     var tc = timecodeAt(seq, t);
     var qs = qeSequence();
     if (typeof qs.exportFramePNG !== 'function') throw ADOBE_MCP.err('UNSUPPORTED', 'exportFramePNG indisponible sur cette version');
     qs.exportFramePNG(tc, path);
-    var f = new File(path), waited = 0;
-    while (!f.exists && waited < 8000) { $.sleep(200); waited += 200; }
-    if (!f.exists) throw ADOBE_MCP.err('EXPORT_FAILED', 'Image non produite : ' + path);
+    var f = U.waitForFile(path, 20000);
+    if (playhead) seq.setPlayerPosition(playhead); // la tête de lecture de l'utilisateur ne bouge pas
+    if (!f) throw ADOBE_MCP.err('EXPORT_FAILED', 'Image non produite : ' + path, 'timecode ' + tc);
     return { path: f.fsName, time: U.round(t, 4), timecode: tc, bytes: f.length };
   };
 
