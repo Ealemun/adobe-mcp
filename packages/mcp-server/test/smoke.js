@@ -80,6 +80,14 @@ try {
   const loud = JSON.parse((await callTool('media_loudness', { path: wavPath })).content[0].text);
   check('media_loudness', loud.integratedLufs < -22 && loud.integratedLufs > -25 && loud.gainToTargetDb > 0, `${loud.integratedLufs} LUFS`);
 
+  const noAe = await callTool('ppro_replace_with_ae_comp', { clipId: 'V1/0' });
+  check('replace_with_ae_comp sans AE → erreur claire', noAe.isError && /After Effects/.test(noAe.content[0].text));
+  const wsAe = await startFakeHost({ app: 'aeft', appVersion: '17.0' });
+  await new Promise(r => setTimeout(r, 100));
+  const rep = JSON.parse((await callTool('ppro_replace_with_ae_comp', { clipId: 'V1/0' })).content[0].text);
+  check('ppro_replace_with_ae_comp (orchestration)', rep.comp === 'cam_A lié' && rep.aepPath === 'C:/test/test.aep' && rep.checkpoint?.checkpointId, rep.comp);
+  wsAe.close();
+
   const res = await rpc('resources/read', { uri: 'adobe://ppro/active-sequence' });
   check('resources/read', res.result?.contents?.[0]?.text?.includes('Montage test'));
 

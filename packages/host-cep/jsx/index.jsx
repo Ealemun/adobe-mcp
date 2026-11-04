@@ -90,6 +90,7 @@ ADOBE_MCP.util = {
 #include "ppro/ranges.jsx"
 #include "ppro/effects.jsx"
 #include "ppro/insert.jsx"
+#include "ppro/dynamiclink.jsx"
 #include "ppro/markers.jsx"
 #include "ppro/export.jsx"
 #include "ppro/render.jsx"

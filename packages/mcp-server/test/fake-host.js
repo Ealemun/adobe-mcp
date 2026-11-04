@@ -45,21 +45,29 @@ export const fns = {
   'markers.add': (a) => { for (const m of a.markers) state.markers.push({ index: state.markers.length, start: m.start, end: m.end ?? m.start, name: m.name ?? '', comment: m.comment ?? '', type: m.type ?? 'Comment', color: m.color ?? null }); return { added: a.markers, total: state.markers.length }; },
   'markers.exportChapters': () => ({ format: 'youtube', count: state.markers.length, text: state.markers.map(m => `${Math.floor(m.start / 60)}:${String(Math.floor(m.start % 60)).padStart(2, '0')} ${m.name}`).join('\n'), chapters: state.markers, warnings: state.markers.length < 3 ? ['YouTube exige au moins 3 chapitres'] : [] }),
   'edit.deleteClips': (a) => { const removed = []; for (const id of a.clipIds) { const i = state.clips.V1.findIndex(c => c.id === id); if (i >= 0) removed.push(state.clips.V1.splice(i, 1)[0]); } return { removed, failed: [], ripple: !!a.ripple, clipsAfter: state.clips.V1.length }; },
+  'dynamiclink.describeClip': (a) => ({ sequence: state.sequences[0], clip: { ...state.clips.V1[0], mediaPath: 'C:/test/cam_A.mp4', inPoint: 0, outPoint: 30, duration: 30, speed: 100 }, track: 'V1', linkedAudio: ['A1/0'], projectDir: 'C:/test', aepSuggested: 'C:/test/_adobe-mcp/ae/projet_ae.aep' }),
+  'dynamiclink.replaceClip': (a) => ({ replaced: [a.clipId, 'A1/0'], comp: a.compName, placed: [{ id: 'V1/0', name: a.compName, start: 0, end: 30 }], warnings: [] }),
   'edit.moveClip': (a) => { const c = state.clips.V1.find(c => c.id === a.clipId); const d = c.end - c.start; c.start = a.time ?? c.start + (a.delta ?? 0); c.end = c.start + d; return { moved: true, id: c.id, start: c.start, end: c.end, moveSemantics: 'relative' }; }
 };
 
+export const aeFns = {
+  'project.get': () => ({ name: 'test.aep', path: 'C:/test/test.aep', version: '17.0', items: 1, comps: 0, activeComp: null }),
+  'dynamiclink.makeComp': (a) => ({ aepPath: 'C:/test/test.aep', compName: a.name, compId: '42', comp: { id: '42', name: a.name, width: a.width, height: a.height, fps: a.fps, duration: a.duration } })
+};
+
 export function startFakeHost({ app = 'ppro', appVersion = '14.9.0' } = {}) {
+  const table = app === 'aeft' ? aeFns : fns;
   const bridge = JSON.parse(readFileSync(BRIDGE_FILE, 'utf8'));
   const ws = new WebSocket(`ws://127.0.0.1:${bridge.port}`);
   return new Promise((resolve, reject) => {
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', protocol: 1, token: bridge.token, app, appVersion, bridge: 'fake', bridgeVersion: '0.0.1', os: process.platform, capabilities: Object.keys(fns) }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'hello', protocol: 1, token: bridge.token, app, appVersion, bridge: 'fake', bridgeVersion: '0.0.1', os: process.platform, capabilities: Object.keys(table) }));
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.type === 'welcome') return resolve(ws);
       if (msg.type === 'error') return reject(new Error(msg.message));
       if (msg.type === 'ping') return ws.send(JSON.stringify({ type: 'pong' }));
       if (msg.type === 'call') {
-        try { ws.send(JSON.stringify({ type: 'result', id: msg.id, ok: true, durationMs: 1, data: fns[msg.fn](msg.args || {}) })); }
+        try { ws.send(JSON.stringify({ type: 'result', id: msg.id, ok: true, durationMs: 1, data: table[msg.fn](msg.args || {}) })); }
         catch (e) { ws.send(JSON.stringify({ type: 'result', id: msg.id, ok: false, error: { code: 'FAKE_ERROR', message: e.message } })); }
       }
     };
