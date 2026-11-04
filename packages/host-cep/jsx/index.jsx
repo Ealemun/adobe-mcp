@@ -88,6 +88,8 @@ ADOBE_MCP.util = {
 #include "ppro/project.jsx"
 #include "ppro/edit.jsx"
 #include "ppro/ranges.jsx"
+#include "ppro/effects.jsx"
+#include "ppro/insert.jsx"
 #include "ppro/markers.jsx"
 #include "ppro/export.jsx"
 #include "ppro/render.jsx"

@@ -17,11 +17,11 @@ const RULES = [
   [/\b(let|const)\s+[A-Za-z_$]/, 'let/const (utiliser var)'],
   [/=>/, 'fonction fléchée'],
   [/`/, 'template literal'],
-  [/\.(forEach|map|filter|reduce|some|every|indexOf|lastIndexOf|trim|bind|isArray|keys|freeze)\s*\(/, 'méthode ES5+ (forEach/map/filter/indexOf/trim/bind/Object.keys…) : écrire une boucle'],
+  [/\.(forEach|map|filter|reduce|some|every|trim|bind|isArray|keys|freeze)\s*\(/, 'méthode ES5+ (forEach/map/filter/trim/bind/Object.keys…) : écrire une boucle ; indexOf n\'existe que sur les chaînes'],
   [/,\s*[\]}]/, 'virgule finale dans un tableau/objet'],
   [new RegExp('\\.(' + RESERVED + ')\\b(?!\\s*:)'), 'mot réservé après un point (ES3) : utiliser obj["mot"]'],
   [/\bJSON\.(parse|stringify)\b/, null], // autorisé (json2.js), listé pour mémoire
-  [/\bgetter\b|\bsetter\b|\bget\s+[a-zA-Z_$][\w$]*\s*\(\s*\)\s*\{/, 'accesseur get/set'],
+  [/\bget\s+[a-zA-Z_$][\w$]*\s*\(\s*\)\s*\{/, 'accesseur get/set'],
   [/\bString\.prototype\.trim\b/, 'trim'],
   [/\bnew\s+Map\b|\bnew\s+Set\b|\bPromise\b/, 'Map/Set/Promise'],
   [/\?\?|\?\./, 'opérateur ?? ou ?.'],
