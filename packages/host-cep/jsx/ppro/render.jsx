@@ -29,6 +29,18 @@
         for (j = 0; j < inner.length; j++) if (inner[j] instanceof Folder && /\.app$/i.test(inner[j].name)) roots.push(inner[j].fsName + '/Contents/MediaIO/systempresets');
       }
     }
+    // Repli : dossiers d'installation habituels (si app.path n'est pas renseigné sur cette version).
+    var bases = ['C:/Program Files/Adobe', '/Applications'];
+    for (i = 0; i < bases.length; i++) {
+      var base = new Folder(bases[i]);
+      if (!base.exists) continue;
+      var apps = safe(function () { return base.getFiles(); }, []);
+      for (j = 0; j < apps.length; j++) if (apps[j] instanceof Folder && /Premiere|Media Encoder/i.test(apps[j].name)) {
+        roots.push(apps[j].fsName + '/MediaIO/systempresets');
+        var bundles = safe(function () { return apps[j].getFiles(); }, []);
+        for (var b = 0; b < bundles.length; b++) if (bundles[b] instanceof Folder && /\.app$/i.test(bundles[b].name)) roots.push(bundles[b].fsName + '/Contents/MediaIO/systempresets');
+      }
+    }
     var docs = Folder.myDocuments.fsName + '/Adobe/Adobe Media Encoder';
     var vers = safe(function () { return new Folder(docs).getFiles(); }, []);
     for (i = 0; i < vers.length; i++) if (vers[i] instanceof Folder) roots.push(vers[i].fsName + '/Presets');
