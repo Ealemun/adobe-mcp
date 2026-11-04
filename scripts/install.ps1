@@ -99,7 +99,11 @@ if ($Remove) {
     if ($c.skillsDir) {
       foreach ($dir in (Get-ChildItem -Directory $SkillsRoot | Where-Object { $_.Name -notlike '_*' })) {
         $sd = Join-Path (Expand $c.skillsDir) $dir.Name
-        if (Test-Path $sd) { Remove-Item $sd -Recurse -Force; Ok "skill retiré : $sd" }
+        if (Test-Path $sd) {
+          $item = Get-Item $sd -Force
+          if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $item.Delete() } else { Remove-Item $sd -Recurse -Force }
+          Ok "skill retiré : $sd"
+        }
       }
     }
   }
@@ -159,14 +163,23 @@ foreach ($c in $Clients) {
     if ($c.restartHint) { Warn "$($c.name) : $($c.restartHint)" }
   }
   if ($c.skillsDir) {
-    # Copie chaque dossier de skills\ (sauf les fichiers de travail commençant par _)
-    $base = Expand $c.skillsDir; $n = 0
+    # Un lien (jonction) par skill vers le dépôt : un « git pull » met les skills à jour sans réinstaller.
+    # Les dossiers commençant par _ (fichiers de travail) sont ignorés.
+    $base = Expand $c.skillsDir; $n = 0; $copied = 0
+    New-Item -ItemType Directory -Force -Path $base | Out-Null
     foreach ($dir in (Get-ChildItem -Directory $SkillsRoot | Where-Object { $_.Name -notlike '_*' })) {
       $sd = Join-Path $base $dir.Name
-      New-Item -ItemType Directory -Force -Path $sd | Out-Null
-      Copy-Item (Join-Path $dir.FullName '*') $sd -Recurse -Force; $n++
+      if (Test-Path $sd) {
+        $item = Get-Item $sd -Force
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $item.Delete() }   # ancienne jonction
+        else { Remove-Item $sd -Recurse -Force }                                          # ancienne copie
+      }
+      try { New-Item -ItemType Junction -Path $sd -Target $dir.FullName | Out-Null }
+      catch { Copy-Item $dir.FullName $sd -Recurse -Force; $copied++ }                  # repli : copie
+      $n++
     }
-    Ok "$($c.name) : $n skills de montage copiés dans $base"
+    if ($copied -eq 0) { Ok "$($c.name) : $n skills liés dans $base (mis à jour automatiquement par git pull)" }
+    else { Warn "$($c.name) : $n skills installés dans $base, dont $copied copiés (relancer l'installeur après un git pull)" }
   }
 }
 if ($configured -eq 0) {
