@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { McpServer, text } from './mcp.js';
 import { Bridge } from './bridge/server.js';
 import { loadConfig, CONFIG_PATH, BRIDGE_FILE, LOG_DIR } from './config.js';
-import { registerPproTools } from './tools/ppro.js';
+import { registerPproTools } from './tools/ppro/index.js';
 import { registerAeftTools } from './tools/aeft.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;

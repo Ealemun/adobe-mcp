@@ -3,7 +3,7 @@
 #include "json2.js"
 
 var ADOBE_MCP = ADOBE_MCP || {};
-ADOBE_MCP.VERSION = '0.1.0';
+ADOBE_MCP.VERSION = '0.2.0';
 ADOBE_MCP.fns = ADOBE_MCP.fns || {};
 ADOBE_MCP.TICKS_PER_SECOND = 254016000000;
 
@@ -84,5 +84,10 @@ ADOBE_MCP.util = {
   }
 };
 
-#include "ppro.jsx"
+#include "ppro/core.jsx"
+#include "ppro/project.jsx"
+#include "ppro/edit.jsx"
+#include "ppro/markers.jsx"
+#include "ppro/export.jsx"
+#include "ppro/safety.jsx"
 #include "aeft.jsx"

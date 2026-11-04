@@ -1,13 +1,13 @@
 {
   "name": "adobe-mcp-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Serveur MCP local pour Adobe Premiere Pro et After Effects",
   "type": "module",
   "private": true,
   "bin": { "adobe-mcp": "src/index.js" },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node test/smoke.js"
+    "test": "node test/jsx-lint.js && node test/smoke.js"
   },
   "engines": { "node": ">=18" }
 }

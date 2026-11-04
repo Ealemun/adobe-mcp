@@ -59,6 +59,15 @@ try {
   const rw = JSON.parse((await callTool('ppro_rewind', { checkpointId: 'ck-1' })).content[0].text);
   check('ppro_rewind', rw.name === 'Montage test');
 
+  const mk = JSON.parse((await callTool('ppro_add_markers', { markers: [{ start: 0, name: 'Intro', type: 'Chapter' }, { start: 65.5, name: 'Suite', type: 'Chapter', color: 'blue' }] })).content[0].text);
+  check('ppro_add_markers', mk.total === 2);
+  const ch = JSON.parse((await callTool('ppro_export_chapters', {})).content[0].text);
+  check('ppro_export_chapters', ch.text === '0:00 Intro\n1:05 Suite' && ch.warnings.length === 1, JSON.stringify(ch.text));
+  const del = JSON.parse((await callTool('ppro_delete_clips', { clipIds: ['V1/1'] })).content[0].text);
+  check('ppro_delete_clips + checkpoint', del.removed.length === 1 && del.checkpoint?.checkpointId === 'ck-2');
+  const mv = JSON.parse((await callTool('ppro_move_clip', { clipId: 'V1/0', delta: 2 })).content[0].text);
+  check('ppro_move_clip', mv.start === 2);
+
   const res = await rpc('resources/read', { uri: 'adobe://ppro/active-sequence' });
   check('resources/read', res.result?.contents?.[0]?.text?.includes('Montage test'));
 

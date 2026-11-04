@@ -16,7 +16,8 @@ function tinyPng() { // PNG 1x1 valide
 const state = {
   sequences: [{ id: 'seq-1', name: 'Montage test', fps: 25, width: 1920, height: 1080, duration: 60, videoTracks: 2, audioTracks: 2 }],
   clips: { V1: [{ id: 'V1/0', name: 'cam_A.mp4', start: 0, end: 30 }, { id: 'V1/1', name: 'cam_B.mp4', start: 30, end: 60 }] },
-  checkpoints: []
+  checkpoints: [],
+  markers: []
 };
 
 export const fns = {
@@ -38,7 +39,13 @@ export const fns = {
   'safety.checkpoint': (a) => { const ck = { checkpointId: 'ck-' + (state.checkpoints.length + 1), checkpointName: '__ckpt_x_' + (a.label || ''), originalSequenceId: 'seq-1', originalName: 'Montage test' }; state.checkpoints.push(ck); return ck; },
   'safety.listCheckpoints': () => state.checkpoints,
   'safety.rewind': (a) => ({ restoredSequenceId: 'seq-2', name: 'Montage test', replacedSequenceId: 'seq-1' }),
-  'ui.alert': () => ({ shown: true })
+  'ui.alert': () => ({ shown: true }),
+  'sequence.getActive': () => ({ ...state.sequences[0], selection: [] }),
+  'markers.get': () => ({ markers: state.markers }),
+  'markers.add': (a) => { for (const m of a.markers) state.markers.push({ index: state.markers.length, start: m.start, end: m.end ?? m.start, name: m.name ?? '', comment: m.comment ?? '', type: m.type ?? 'Comment', color: m.color ?? null }); return { added: a.markers, total: state.markers.length }; },
+  'markers.exportChapters': () => ({ format: 'youtube', count: state.markers.length, text: state.markers.map(m => `${Math.floor(m.start / 60)}:${String(Math.floor(m.start % 60)).padStart(2, '0')} ${m.name}`).join('\n'), chapters: state.markers, warnings: state.markers.length < 3 ? ['YouTube exige au moins 3 chapitres'] : [] }),
+  'edit.deleteClips': (a) => { const removed = []; for (const id of a.clipIds) { const i = state.clips.V1.findIndex(c => c.id === id); if (i >= 0) removed.push(state.clips.V1.splice(i, 1)[0]); } return { removed, failed: [], ripple: !!a.ripple, clipsAfter: state.clips.V1.length }; },
+  'edit.moveClip': (a) => { const c = state.clips.V1.find(c => c.id === a.clipId); const d = c.end - c.start; c.start = a.time ?? c.start + (a.delta ?? 0); c.end = c.start + d; return { moved: true, id: c.id, start: c.start, end: c.end, moveSemantics: 'relative' }; }
 };
 
 export function startFakeHost({ app = 'ppro', appVersion = '14.9.0' } = {}) {
