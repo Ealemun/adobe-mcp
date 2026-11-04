@@ -68,6 +68,18 @@ try {
   const mv = JSON.parse((await callTool('ppro_move_clip', { clipId: 'V1/0', delta: 2 })).content[0].text);
   check('ppro_move_clip', mv.start === 2);
 
+  // Workers média : WAV synthétique (son à -20 dBFS avec deux trous) → silences et loudness
+  const { writeFileSync } = await import('node:fs');
+  const sr = 48000, n = sr * 10, wav = Buffer.alloc(44 + n * 2);
+  wav.write('RIFF', 0); wav.writeUInt32LE(36 + n * 2, 4); wav.write('WAVE', 8); wav.write('fmt ', 12); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(sr, 24); wav.writeUInt32LE(sr * 2, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(n * 2, 40);
+  for (let i = 0; i < n; i++) { const t = i / sr; const on = !((t > 2 && t < 3) || (t > 6 && t < 7.3)); wav.writeInt16LE(Math.round((on ? 0.1 * Math.sin(2 * Math.PI * 1000 * t) : 0) * 32767), 44 + i * 2); }
+  const wavPath = join(tmpdir(), 'adobe-mcp-smoke.wav'); writeFileSync(wavPath, wav);
+  const sil = JSON.parse((await callTool('media_detect_silences', { path: wavPath, offset: 100 })).content[0].text);
+  check('media_detect_silences', sil.silences.length === 2 && sil.silences[0].start > 102 && sil.silences[0].start < 102.2, JSON.stringify(sil.summary));
+  const loud = JSON.parse((await callTool('media_loudness', { path: wavPath })).content[0].text);
+  check('media_loudness', loud.integratedLufs < -22 && loud.integratedLufs > -25 && loud.gainToTargetDb > 0, `${loud.integratedLufs} LUFS`);
+
   const res = await rpc('resources/read', { uri: 'adobe://ppro/active-sequence' });
   check('resources/read', res.result?.contents?.[0]?.text?.includes('Montage test'));
 

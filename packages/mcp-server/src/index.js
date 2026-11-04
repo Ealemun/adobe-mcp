@@ -6,6 +6,7 @@ import { Bridge } from './bridge/server.js';
 import { loadConfig, CONFIG_PATH, BRIDGE_FILE, LOG_DIR } from './config.js';
 import { registerPproTools } from './tools/ppro/index.js';
 import { registerAeftTools } from './tools/aeft.js';
+import { registerMediaTools } from './tools/media.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -31,6 +32,7 @@ async function main() {
 
   registerPproTools(server, bridge, config);
   registerAeftTools(server, bridge);
+  registerMediaTools(server);
 
   server.registerResource({ uri: 'adobe://status', name: 'État du pont adobe-mcp', description: 'Hôtes connectés', read: async () => JSON.stringify(bridge.status(), null, 2) });
   server.registerResource({ uri: 'adobe://ppro/active-sequence', name: 'Séquence active Premiere', description: 'Structure de la séquence active',

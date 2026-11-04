@@ -5,6 +5,7 @@ import { registerEditTools } from './edit.js';
 import { registerProjectTools } from './project.js';
 import { registerMarkerTools } from './markers.js';
 import { registerSafetyTools } from './safety.js';
+import { registerRenderTools } from './render.js';
 
 export function registerPproTools(server, bridge, config) {
   const ctx = makeContext(server, bridge, config);
@@ -13,4 +14,5 @@ export function registerPproTools(server, bridge, config) {
   registerProjectTools(ctx);
   registerMarkerTools(ctx);
   registerSafetyTools(ctx);
+  registerRenderTools(ctx);
 }
