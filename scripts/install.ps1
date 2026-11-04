@@ -27,7 +27,7 @@ $Server   = Join-Path $Root 'packages\mcp-server\src\index.js'
 $Skill    = Join-Path $Root 'skills\adobe-editing'
 $ExtDir   = Join-Path $env:APPDATA 'Adobe\CEP\extensions'
 $Link     = Join-Path $ExtDir 'com.adobe-mcp.panel'
-$Clients  = Get-Content (Join-Path $PSScriptRoot 'clients.json') -Raw | ConvertFrom-Json
+$Clients  = Get-Content (Join-Path $PSScriptRoot 'clients.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $ServerId = 'adobe'
 $Report   = @()
 
