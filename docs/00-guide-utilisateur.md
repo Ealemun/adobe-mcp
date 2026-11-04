@@ -24,7 +24,7 @@ Prérequis : Windows 10/11 ou macOS, Premiere Pro et/ou After Effects (2018 ou p
 
    L'installeur fait trois choses, et les affiche : il autorise Adobe à charger le panneau, il installe le panneau « Adobe MCP » dans vos extensions, et il enregistre le serveur `adobe` dans la configuration de votre client MCP. Aucune étape ne demande de droits administrateur.
 3. Ouvrir Premiere Pro → menu **Fenêtre > Extensions > Adobe MCP**. Le panneau affiche « Connecté ». Vous pouvez le réduire ou l'ancrer n'importe où ; il doit juste rester ouvert.
-4. Ouvrir votre client MCP et taper : « Quelles sont tes capacités Premiere ? » S'il répond avec la version de Premiere et une liste de fonctions, tout est en place. Le serveur est lancé par le client MCP ; le panneau se reconnecte tout seul toutes les 3 s.
+4. Ouvrir votre client MCP et taper : « Quelles sont tes capacités Premiere ? » S'il répond avec la version de Premiere et une liste de fonctions, tout est en place. Vous ne lancez jamais le serveur vous-même : le client MCP le démarre à son ouverture (depuis n'importe quel dossier) et l'arrête à sa fermeture ; le panneau se reconnecte tout seul toutes les 3 s. Voir la section « Comment ça marche » du README.
 
 Pour l'analyse audio (transcription, silences, séparation de pistes) *(phase 3)* : relancer l'installeur avec l'option `--workers`, qui installe Python et les modèles nécessaires (environ 2 Go, une seule fois).
 

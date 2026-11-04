@@ -1,69 +1,150 @@
 # adobe-mcp
 
-Serveur MCP local pour piloter **Adobe Premiere Pro** et **After Effects** depuis n'importe quel client MCP (assistant IA en ligne de commande ou application de bureau), sans serveur tiers, sans abonnement, sans code distant.
+Piloter **Adobe Premiere Pro** et **After Effects** en langage naturel depuis un assistant IA compatible MCP. Tout tourne sur votre machine : pas de serveur distant, pas d'abonnement, pas de code téléchargé au démarrage.
 
-> Statut : **phase 1 (spike)** — serveur MCP sans dépendance, panneau Premiere Pro / After Effects, installeur Windows, 20 tools (lecture de projet et de séquence, coupes avec sauvegarde automatique, import, export d'image, retour arrière). Voir `docs/05-roadmap.md` pour la suite.
+> Statut : **phase 1** — fonctionne sur Premiere Pro 2020 (testé), lecture du projet et de la timeline, coupes avec sauvegarde automatique, import, export d'image, retour arrière ; socle After Effects. Suite : `docs/05-roadmap.md`.
 
-## Démarrage rapide (Windows)
+---
 
-Prérequis : [Node.js](https://nodejs.org) 18 ou plus, Premiere Pro et/ou After Effects (2018 ou plus récent), un client MCP.
+## Comment ça marche (à lire une fois)
 
-1. Récupérer le dépôt : `git clone https://github.com/Ealemun/adobe-mcp` (ou télécharger le zip et le décompresser).
-2. Double-cliquer sur `scripts\install.cmd`. Sans droits administrateur, il autorise les panneaux non signés, installe le panneau, déclare le serveur dans les clients MCP détectés et lance un test.
-3. Ouvrir Premiere Pro → **Fenêtre > Extensions > Adobe MCP**. Le panneau affiche « Connecté » dès que le client MCP a démarré le serveur.
-4. Dans le client MCP : « Quelles sont tes capacités Premiere ? ».
-
-Désinstallation : `scripts\uninstall.cmd`. Détails et dépannage : `docs/00-guide-utilisateur.md`.
-
-## Pourquoi
-
-Les « copilotes » commerciaux pour Premiere sont pour la plupart des coquilles : un panneau qui télécharge son code au démarrage, envoie vos demandes à un serveur distant qui appelle un LLM, et renvoie du code ExtendScript exécuté dans votre Premiere. Vous payez des crédits, vous dépendez d'un serveur, et l'éditeur peut changer le code à tout moment.
-
-`adobe-mcp` fait la même chose en local : l'agent IA est le cerveau, un petit pont dans l'application Adobe exécute les primitives, des workers locaux (Whisper, ffmpeg, Demucs) font l'analyse média.
-
-## Architecture en une phrase
+Trois morceaux, et **vous n'en lancez aucun à la main** :
 
 ```
-Agent  ──(MCP stdio)──▶ mcp-server ──(WebSocket localhost)──▶ host-cep / host-uxp ──(evalScript)──▶ Premiere / After Effects
-                            │
-                            └──▶ workers (ffmpeg, whisper, demucs, scenedetect)
+ Vous ──▶ Client MCP ──lance automatiquement──▶ Serveur adobe-mcp ◀──se connecte tout seul── Panneau « Adobe MCP »
+          (assistant IA en                       (programme Node,                           (dans Premiere ou
+           ligne de commande                      invisible, tourne tant                      After Effects)
+           ou appli de bureau)                    que le client est ouvert)
 ```
 
-## Compatibilité visée
-
-| Application | Versions | Pont |
+| Morceau | Qui le démarre | Quand |
 |---|---|---|
-| Premiere Pro | 2018 (12.x) → 2028 | CEP (`host-cep`), puis UXP (`host-uxp`) en parallèle |
-| After Effects | 2018 (15.x) → 2028+ | CEP (`host-cep`) + mode sans panneau (`AfterFX -r`), UXP quand GA |
-| Media Encoder | via Premiere / `aerender` | — |
+| **Client MCP** | vous | quand vous voulez travailler |
+| **Serveur adobe-mcp** | le client MCP, automatiquement | à l'ouverture du client ; il s'arrête quand vous fermez le client |
+| **Panneau Adobe MCP** | vous, une seule fois dans Premiere (Fenêtre > Extensions > Adobe MCP) | ensuite Premiere le rouvre tout seul à chaque lancement s'il est ancré dans l'espace de travail |
 
-Adobe (sept. 2026) : CEP reste actif dans Premiere et After Effects jusqu'à fin 2028 (désactivé par défaut ensuite, retiré en déc. 2029). UXP est GA dans Premiere ; bêta publique After Effects prévue nov. 2026. ExtendScript n'est pas affecté. Le protocole du pont est indépendant de CEP/UXP : seul le client du pont change, pas le serveur MCP.
+Le panneau réessaie de se connecter toutes les 3 secondes : **l'ordre d'ouverture n'a pas d'importance**. Point vert = prêt.
 
-## Documentation
+---
+
+## Installation (une seule fois)
+
+Prérequis : Windows 10/11, [Node.js](https://nodejs.org) 18 ou plus, Premiere Pro et/ou After Effects 2018 ou plus récent, un client MCP installé.
+
+```powershell
+cd D:\Documents                      # ou n'importe quel dossier où garder le projet
+git clone https://github.com/Ealemun/adobe-mcp
+cd adobe-mcp
+.\scripts\install.cmd
+```
+
+L'installeur (sans droits administrateur) :
+1. autorise Premiere/After Effects à charger un panneau non signé ;
+2. installe le panneau « Adobe MCP » (lien vers ce dossier : **ne déplacez plus le dossier** après l'installation) ;
+3. déclare le serveur `adobe` dans les clients MCP qu'il trouve (configuration utilisateur : valable quel que soit le dossier d'où le client est lancé) ;
+4. lance un test automatique.
+
+Chaque ligne du résumé final doit commencer par `OK`. Une ligne `!!` explique ce qu'il reste à faire.
+
+---
+
+## Utilisation au quotidien
+
+1. **Ouvrez Premiere Pro** et votre projet. Double-cliquez la séquence à travailler pour qu'elle soit active dans la timeline.
+2. **Ouvrez votre client MCP**, depuis n'importe quel dossier.
+   - client en ligne de commande : ouvrez un terminal et lancez-le ;
+   - application de bureau : ouvrez-la (si elle était déjà ouverte avant l'installation, quittez-la complètement puis relancez-la une fois).
+3. **Vérifiez le panneau** (Fenêtre > Extensions > Adobe MCP) : point vert, « Connecté au serveur MCP ».
+4. **Parlez à l'assistant**, par exemple :
+   - « Quelles sont tes capacités Premiere ? »
+   - « Décris ma séquence. »
+   - « Montre-moi l'image à 1 min 30. »
+   - « Coupe à 12 s et à 18 s. »  → une copie de sauvegarde est créée d'abord dans le chutier `_adobe-mcp`
+   - « Reviens à la version d'avant. »
+
+Un seul client MCP à la fois : si deux clients sont ouverts, chacun lance son serveur et le panneau ne parle qu'à l'un des deux.
+
+### Ce que l'assistant sait faire aujourd'hui
+
+| Premiere Pro | After Effects |
+|---|---|
+| lire le projet, les séquences, la timeline (clips, durées, marqueurs) | lire le projet et les compositions |
+| activer une séquence, déplacer la tête de lecture | créer une composition |
+| couper à des instants donnés (sauvegarde automatique avant) | exporter une image |
+| importer des fichiers | |
+| exporter une image et la regarder | |
+| créer / lister / restaurer des sauvegardes de séquence | |
+
+Le reste (suppression de silences, sous-titres, zooms, export vidéo, animations…) est planifié : voir `docs/03-catalogue-tools.md` et `docs/05-roadmap.md`.
+
+---
+
+## Mettre à jour
+
+```powershell
+cd D:\Documents\adobe-mcp
+git pull
+```
+
+Puis, selon ce qui a changé (le message du commit le dit) :
+
+| Fichiers modifiés | À faire |
+|---|---|
+| `packages/mcp-server/…` | fermer et rouvrir le client MCP |
+| `packages/host-cep/jsx/…` | quitter et relancer Premiere / After Effects |
+| `packages/host-cep/js/…`, `index.html` | fermer et rouvrir le panneau |
+| `scripts/…` | relancer `.\scripts\install.cmd` |
+
+Dans le doute : fermer le client MCP et Premiere, puis tout rouvrir.
+
+---
+
+## Dépannage
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| Le panneau n'est pas dans Fenêtre > Extensions | installation non faite ou Premiere pas relancé | lancer `.\scripts\install.cmd`, puis relancer Premiere |
+| Point rouge « Aucun serveur sur le port 8765 » | le client MCP n'est pas ouvert | ouvrir le client MCP ; le panneau se connecte dans les 3 s |
+| Point rouge alors que le client est ouvert | serveur non déclaré dans ce client | dans le client, lister les serveurs MCP : `adobe` doit apparaître ; sinon relancer l'installeur |
+| L'assistant dit « Premiere Pro n'est pas connecté » | panneau fermé | ouvrir le panneau |
+| « Aucune séquence active » | aucune séquence ouverte dans la timeline | double-cliquer une séquence |
+| Une action échoue | voir le journal | journal du panneau (lignes ✗) et `%USERPROFILE%\.adobe-mcp\logs\` |
+
+**Test sans Premiere** : `node packages\mcp-server\test\smoke.js` vérifie le serveur avec un faux Premiere.
+**Test du serveur seul** : `node packages\mcp-server\src\index.js` le lance à la main (le panneau doit passer au vert) ; Ctrl+C pour l'arrêter. À n'utiliser que pour diagnostiquer.
+
+---
+
+## Désinstaller
+
+```powershell
+.\scripts\uninstall.cmd
+```
+Retire le panneau et les déclarations dans les clients MCP. Les sauvegardes de séquences restent dans vos projets (chutier `_adobe-mcp`, à supprimer à la main si besoin).
+
+---
+
+## Pour aller plus loin
 
 | Fichier | Contenu |
 |---|---|
-| `docs/00-guide-utilisateur.md` | **Commencer ici** : installation en 5 minutes, premier montage, ce qu'on peut demander, sécurité, dépannage |
-| `docs/01-architecture.md` | Composants, flux, choix techniques, sécurité |
-| `docs/02-protocole-bridge.md` | Protocole WebSocket serveur MCP ↔ pont Adobe, format des données |
-| `docs/03-catalogue-tools.md` | Catalogue exhaustif des tools MCP (Premiere, After Effects, média, sécurité) |
-| `docs/04-fonctionnalites-recettes.md` | Fonctionnalités de haut niveau (jump cut, captions, B-roll, multicam…) exprimées comme recettes |
-| `docs/05-roadmap.md` | Phases, livrables, critères de validation |
-| `docs/06-installation-dev.md` | Installer un pont CEP non signé, PlayerDebugMode, chemins, signature ZXP |
-| `skills/adobe-editing/SKILL.md` | Instructions pour l'agent : comment enchaîner les tools pour monter une vidéo |
-
-## Arborescence
+| `docs/00-guide-utilisateur.md` | guide détaillé, sécurité, tout ce qu'on pourra demander |
+| `docs/01-architecture.md` | composants, choix techniques |
+| `docs/02-protocole-bridge.md` | protocole entre le serveur et le panneau |
+| `docs/03-catalogue-tools.md` | catalogue complet des outils (actuels et prévus) |
+| `docs/04-fonctionnalites-recettes.md` | fonctionnalités de montage (jump cut, sous-titres, B-roll…) |
+| `docs/05-roadmap.md` | étapes du projet |
+| `docs/06-installation-dev.md` | détails d'installation, macOS, développement |
+| `skills/adobe-editing/SKILL.md` | instructions données à l'assistant pour enchaîner les outils |
 
 ```
 adobe-mcp/
 ├── packages/
-│   ├── mcp-server/      # Node/TypeScript, serveur MCP (stdio) + serveur WebSocket du pont
-│   ├── host-cep/        # Panneau CEP (Premiere + After Effects) : client WS → evalScript
-│   ├── host-uxp/        # Plugin UXP Premiere (même protocole), phase 5
-│   └── workers/         # Python : transcription, silences, stems, scènes, loudness
-├── presets/             # .epr (export), .sqpreset, .mogrt de base
-├── skills/              # Instructions agent (recettes de montage)
-├── scripts/             # install dev, signature ZXP, packaging
+│   ├── mcp-server/   # serveur MCP en Node.js pur (aucune dépendance) + pont WebSocket
+│   ├── host-cep/     # panneau Premiere / After Effects + bibliothèque ExtendScript (jsx/)
+│   ├── host-uxp/     # (à venir) panneau UXP pour les versions récentes de Premiere
+│   └── workers/      # (à venir) analyse audio/vidéo : transcription, silences…
+├── scripts/          # install.cmd, uninstall.cmd, clients.json
+├── skills/           # instructions pour l'assistant
 └── docs/
 ```
-
