@@ -41,8 +41,8 @@ export function registerProjectTools(ctx) {
 
   tool({
     name: 'ppro_create_sequence', title: 'Créer une séquence', annotations: WRITE,
-    description: 'Crée une séquence vide. Avec preset (.sqpreset) ou réglages par défaut puis taille/fps demandés (settingsApplied indique si l\'ajustement a été accepté par cette version).',
-    input: { required: ['name'], properties: { name: { type: 'string' }, preset: { type: 'string', description: 'Chemin d\'un fichier .sqpreset.' }, width: { type: 'integer' }, height: { type: 'integer' }, fps: { type: 'number' } } },
+    description: 'Crée une séquence vide. Avec preset (.sqpreset), sinon à partir des réglages d\'un média du projet (fromItem, ou la première vidéo trouvée), puis taille/fps demandés (settingsApplied indique si l\'ajustement a été accepté par cette version). N\'ouvre jamais la fenêtre « Nouvelle séquence » (qui bloque Premiere 2020).',
+    input: { required: ['name'], properties: { name: { type: 'string' }, preset: { type: 'string', description: 'Chemin d\'un fichier .sqpreset.' }, fromItem: { type: 'string', description: 'nodeId du média dont la séquence reprend les réglages (défaut : première vidéo du projet).' }, width: { type: 'integer' }, height: { type: 'integer' }, fps: { type: 'number' } } },
     handler: async (a) => text(await call('sequence.create', a))
   });
 

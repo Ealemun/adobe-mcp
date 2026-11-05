@@ -199,15 +199,32 @@
   F['sequence.create'] = function (a) {
     var p = P.requireProject();
     if (!a.name) throw ADOBE_MCP.err('BAD_ARGS', 'name requis');
-    var before = P.sequenceIdSet(), seq = null;
+    var before = P.sequenceIdSet(), seq = null, method;
     if (a.preset) {
       if (!U.fileExists(a.preset)) throw ADOBE_MCP.err('FILE_NOT_FOUND', 'Preset introuvable : ' + a.preset);
       p.newSequence(String(a.name), String(a.preset));
+      method = 'preset';
     } else {
-      seq = p.createNewSequence(String(a.name), 'adobe-mcp-' + U.stamp());
+      // createNewSequence() ouvre la fenêtre modale « Nouvelle séquence » sur certaines versions
+      // (Premiere 2020 : l'appel ne rend jamais la main et Premiere reste bloqué). On passe donc par
+      // createNewSequenceFromClips() avec un média du projet (fromItem, sinon la première vidéo trouvée),
+      // puis on vide la séquence : elle hérite des réglages du média, ajustés ensuite par width/height/fps.
+      var media = a.fromItem ? P.requireItem(a.fromItem) : P.firstVideoItem();
+      if (media && typeof p.createNewSequenceFromClips === 'function') {
+        seq = p.createNewSequenceFromClips(String(a.name), [media], p.rootItem);
+        if (seq) P.emptySequence(seq);
+        method = 'fromClips';
+      } else if (P.appMajor() >= 22) {
+        seq = p.createNewSequence(String(a.name), 'adobe-mcp-' + U.stamp());
+        method = 'default';
+      } else {
+        throw ADOBE_MCP.err('UNSUPPORTED', 'Sur cette version de Premiere, une séquence vide ne peut être créée sans bloquer l\'interface : ' +
+          'donner preset (.sqpreset), ou importer un média (fromItem), ou dupliquer une séquence existante (ppro_duplicate_sequence).');
+      }
     }
     if (!seq) for (var i = 0; i < p.sequences.numSequences; i++) if (!before[String(p.sequences[i].sequenceID)]) seq = p.sequences[i];
     if (!seq) throw ADOBE_MCP.err('CREATE_FAILED', 'La séquence n\'a pas été créée');
+    if (a.name) seq.name = String(a.name);
     var applied = null;
     if (a.width || a.height || a.fps) {
       applied = safe(function () {
@@ -221,7 +238,33 @@
     }
     var info = P.sequenceInfo(seq);
     info.settingsApplied = applied;
+    info.method = method;
     return info;
+  };
+
+  // Version majeure de Premiere (14 = 2020, 22 = 2022…).
+  P.appMajor = function () { return parseInt(String(app.version), 10) || 0; };
+
+  // Premier média vidéo du projet (parcours récursif des chutiers) ; null si aucun.
+  P.firstVideoItem = function () {
+    function walk(item) {
+      for (var i = 0; i < item.children.numItems; i++) {
+        var c = item.children[i];
+        if (c.type === ProjectItemType.BIN) { var r = walk(c); if (r) return r; continue; }
+        if (safe(function () { return c.isSequence(); }, false)) continue;
+        if (P.mediaKind(safe(function () { return String(c.getMediaPath()); }, null)) === 'video') return c;
+      }
+      return null;
+    }
+    return walk(app.project.rootItem);
+  };
+
+  // Retire tous les clips d'une séquence (du dernier au premier sur chaque piste).
+  P.emptySequence = function (seq) {
+    var tracks = P.allTracks(seq);
+    for (var k = 0; k < tracks.length; k++)
+      for (var j = tracks[k].track.clips.numItems - 1; j >= 0; j--)
+        safe(function () { tracks[k].track.clips[j].remove(false, false); });
   };
 
   // ---------------------------------------------------------------- pistes
