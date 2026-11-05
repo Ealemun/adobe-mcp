@@ -26,8 +26,18 @@ export function makeContext(server, bridge, config) {
   const tool = ({ name, title, description, input = {}, annotations = WRITE, handler }) => server.registerTool({
     name, title, description, annotations,
     inputSchema: { type: 'object', additionalProperties: false, properties: input.properties ?? {}, ...(input.required ? { required: input.required } : {}) },
-    handler
+    // Toute modification réussie peut déclencher l'enregistrement automatique du projet (Premiere plante parfois).
+    handler: annotations === READ_ONLY || name === 'ppro_save_project' ? handler : async (a) => { const r = await handler(a); await autoSave(annotations, a); return r; }
   });
+  // Enregistrement automatique : tout de suite après une opération destructive, sinon au plus toutes les
+  // safety.autoSaveSeconds secondes. Un échec d'enregistrement ne fait jamais échouer l'outil appelé.
+  let lastSave = Date.now();
+  const autoSave = async (annotations, a) => {
+    const every = config.safety.autoSaveSeconds;
+    if (!every || a?.dryRun) return;
+    if (annotations !== DESTRUCTIVE && Date.now() - lastSave < every * 1000) return;
+    try { await call('project.save', {}, { timeoutMs: 120000 }); lastSave = Date.now(); } catch { /* projet sans chemin, hôte occupé… : on réessaiera au prochain appel */ }
+  };
   // Checkpoint automatique avant une opération destructive (sauf désactivé par l'appel ou la config).
   const withCheckpoint = async (a, label, run) => {
     const { checkpoint, dryRun, ...args } = a;

@@ -34,7 +34,7 @@ export function registerProjectTools(ctx) {
 
   tool({
     name: 'ppro_save_project', title: 'Enregistrer le projet', annotations: WRITE,
-    description: 'Enregistre le projet (ou « Enregistrer sous » si as est donné : chemin .prproj).',
+    description: 'Enregistre le projet (ou « Enregistrer sous » si as est donné : chemin .prproj). Le serveur enregistre déjà automatiquement après chaque opération destructive et au plus toutes les 2 min (config safety.autoSaveSeconds).',
     input: { properties: { as: { type: 'string', description: 'Chemin du nouveau fichier .prproj (Enregistrer sous).' } } },
     handler: async (a) => text(await call('project.save', a, { timeoutMs: 120000 }))
   });

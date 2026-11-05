@@ -18,7 +18,7 @@ export const BRIDGE_FILE = process.env.ADOBE_MCP_BRIDGE_FILE || join(userDataDir
 
 export const DEFAULT_CONFIG = {
   bridge: { port: 8765 },
-  safety: { confirmPolicy: 'batch', autoCheckpoint: true, allowScript: false },
+  safety: { confirmPolicy: 'batch', autoCheckpoint: true, allowScript: false, autoSaveSeconds: 120 }, // autoSaveSeconds : enregistrement auto du projet (0 = désactivé)
   calls: { timeoutMs: 60000 },
   transcribe: { command: '', model: 'base' } // commande Whisper personnalisée ({input} {lang} {model} {outDir} {outBase}) ; vide = détection automatique
 };
