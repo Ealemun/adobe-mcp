@@ -1,18 +1,22 @@
-// Serveur WebSocket minimal (RFC 6455) sans dépendance, limité à ce dont le pont a besoin :
-// trames texte, ping/pong, close ; clients masqués (navigateur), serveur non masqué ; pas de fragmentation.
+// WebSocket minimal (RFC 6455) sans dépendance, limité à ce dont le pont a besoin :
+// trames texte, ping/pong, close ; pas de fragmentation.
+// Serveur : reçoit des trames masquées (clients), envoie non masqué. Client : envoie masqué (obligatoire côté client).
 import { createServer } from 'node:http';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { connect as netConnect } from 'node:net';
 import { EventEmitter } from 'node:events';
 
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
 export class WebSocketConnection extends EventEmitter {
-  constructor(socket) {
+  constructor(socket, { mask = false } = {}) {
     super();
     this.socket = socket;
+    this.mask = mask; // true côté client : chaque trame envoyée est masquée
     this.buffer = Buffer.alloc(0);
     this.open = true;
     socket.on('data', (chunk) => { this.buffer = Buffer.concat([this.buffer, chunk]); this.#drain(); });
+    this.on('data-ready', () => this.#drain()); // octets reçus avant que les écouteurs soient posés
     socket.on('close', () => { if (this.open) { this.open = false; this.emit('close'); } });
     socket.on('error', (e) => { this.emit('error', e); });
   }
@@ -45,12 +49,17 @@ export class WebSocketConnection extends EventEmitter {
 
   #frame(opcode, payload) {
     if (!this.socket.writable) return;
-    const len = payload.length;
+    const len = payload.length, m = this.mask ? 0x80 : 0;
     let header;
-    if (len < 126) header = Buffer.from([0x80 | opcode, len]);
-    else if (len < 65536) { header = Buffer.alloc(4); header[0] = 0x80 | opcode; header[1] = 126; header.writeUInt16BE(len, 2); }
-    else { header = Buffer.alloc(10); header[0] = 0x80 | opcode; header[1] = 127; header.writeBigUInt64BE(BigInt(len), 2); }
-    this.socket.write(Buffer.concat([header, payload]));
+    if (len < 126) header = Buffer.from([0x80 | opcode, m | len]);
+    else if (len < 65536) { header = Buffer.alloc(4); header[0] = 0x80 | opcode; header[1] = m | 126; header.writeUInt16BE(len, 2); }
+    else { header = Buffer.alloc(10); header[0] = 0x80 | opcode; header[1] = m | 127; header.writeBigUInt64BE(BigInt(len), 2); }
+    if (this.mask) {
+      // Clé de masque aléatoire puis charge XOR (RFC 6455 §5.3)
+      const key = randomBytes(4), body = Buffer.from(payload);
+      for (let i = 0; i < body.length; i++) body[i] ^= key[i % 4];
+      this.socket.write(Buffer.concat([header, key, body]));
+    } else this.socket.write(Buffer.concat([header, payload]));
   }
 
   send(data) { if (this.open) this.#frame(0x1, Buffer.from(typeof data === 'string' ? data : JSON.stringify(data), 'utf8')); }
@@ -80,5 +89,33 @@ export function startWebSocketServer({ port, host = '127.0.0.1', onConnection })
     });
     server.on('error', reject);
     server.listen(port, host, () => resolve({ server, port: server.address().port }));
+  });
+}
+
+/** Client WebSocket vers ws://127.0.0.1:port. Résout avec une WebSocketConnection ouverte, rejette si refus. */
+export function connectWebSocket({ port, host = '127.0.0.1', timeoutMs = 3000 }) {
+  return new Promise((resolve, reject) => {
+    const key = randomBytes(16).toString('base64');
+    const expected = createHash('sha1').update(key + GUID).digest('base64');
+    const socket = netConnect({ port, host });
+    let buf = Buffer.alloc(0), done = false;
+    const fail = (e) => { if (done) return; done = true; socket.destroy(); reject(e); };
+    const timer = setTimeout(() => fail(Object.assign(new Error('Délai de connexion dépassé'), { code: 'ETIMEDOUT' })), timeoutMs);
+    socket.on('error', (e) => { clearTimeout(timer); fail(e); });
+    socket.on('connect', () => socket.write(`GET / HTTP/1.1\r\nHost: ${host}:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\n\r\n`));
+    const onData = (chunk) => {
+      buf = Buffer.concat([buf, chunk]);
+      const end = buf.indexOf('\r\n\r\n');
+      if (end < 0) return;
+      socket.off('data', onData); clearTimeout(timer);
+      const head = buf.subarray(0, end).toString('latin1'), rest = buf.subarray(end + 4);
+      // Le port peut être tenu par autre chose qu'adobe-mcp : on vérifie la poignée de main.
+      if (!/^HTTP\/1\.1 101/.test(head) || !head.toLowerCase().includes(expected.toLowerCase())) return fail(Object.assign(new Error('Le port n\'est pas un pont adobe-mcp'), { code: 'NOT_BRIDGE' }));
+      done = true;
+      const conn = new WebSocketConnection(socket, { mask: true });
+      if (rest.length) { conn.buffer = Buffer.concat([conn.buffer, rest]); setImmediate(() => conn.emit('data-ready')); }
+      resolve(conn);
+    };
+    socket.on('data', onData);
   });
 }

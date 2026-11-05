@@ -33,7 +33,7 @@ async function main() {
     name: 'adobe_status', title: 'État du pont',
     description: 'Applications Adobe connectées au serveur (Premiere Pro, After Effects), leurs versions et fonctions, port du pont, chemins de config et de journaux.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true },
-    handler: async () => text({ serverVersion: VERSION, bridgePort: bridge.port, bridgeFile: BRIDGE_FILE, configPath: CONFIG_PATH, logDir: LOG_DIR, hosts: bridge.status(),
+    handler: async () => text({ serverVersion: VERSION, bridgePort: bridge.port, bridge: bridge.info(), bridgeFile: BRIDGE_FILE, configPath: CONFIG_PATH, logDir: LOG_DIR, hosts: bridge.status(),
                                 hint: bridge.hosts.size ? undefined : 'Aucune application connectée : ouvrez Premiere Pro ou After Effects, puis Fenêtre > Extensions > Adobe MCP.' })
   });
 
@@ -51,13 +51,14 @@ async function main() {
 
   bridge.on('host', (h) => server.log('info', `${h.app} ${h.appVersion} connecté (${h.capabilities.size} fonctions)`));
   bridge.on('hostgone', (h) => server.log('warning', `${h.app} déconnecté`));
+  bridge.on('role', (r) => process.stderr.write(`[adobe-mcp] rôle : ${r === 'leader' ? 'pont principal' : 'relais vers le pont principal'} (port ${bridge.port})\n`));
 
   const shutdown = () => { bridge.stop(); process.exit(0); };
   process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
   process.stdin.on('end', shutdown);
 
   server.start();
-  process.stderr.write(`[adobe-mcp ${VERSION}] pont WebSocket sur 127.0.0.1:${bridge.port} — en attente des panneaux Adobe\n`);
+  process.stderr.write(`[adobe-mcp ${VERSION}] ${bridge.role === 'leader' ? 'pont principal' : 'relais vers le pont principal'} sur 127.0.0.1:${bridge.port}\n`);
 }
 
 main().catch((e) => { process.stderr.write(`[adobe-mcp] erreur fatale : ${e.stack || e}\n`); process.exit(1); });

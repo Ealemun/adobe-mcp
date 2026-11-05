@@ -62,7 +62,7 @@ Chaque ligne du résumé final doit commencer par `OK`. Une ligne `!!` explique 
    - « Coupe à 12 s et à 18 s. »  → une copie de sauvegarde est créée d'abord dans le chutier `_adobe-mcp`
    - « Reviens à la version d'avant. »
 
-Un seul client MCP à la fois : si deux clients sont ouverts, chacun lance son serveur et le panneau ne parle qu'à l'un des deux.
+Plusieurs clients MCP à la fois (par exemple une fenêtre sur Premiere et une autre sur After Effects) : le premier ouvert tient le pont, les suivants passent par lui. Si on ferme le premier, un autre reprend la main en quelques secondes et les panneaux se reconnectent tout seuls ; un appel en cours à ce moment-là renvoie une erreur « relancer l'appel ». Éviter de faire travailler deux assistants sur la même séquence en même temps.
 
 ### Ce que l'assistant sait faire aujourd'hui
 

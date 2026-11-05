@@ -7,7 +7,7 @@
   "bin": { "adobe-mcp": "src/index.js" },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node test/jsx-lint.js && node test/smoke.js"
+    "test": "node test/jsx-lint.js && node test/smoke.js && node test/bridge-share.js"
   },
   "engines": { "node": ">=18" }
 }
