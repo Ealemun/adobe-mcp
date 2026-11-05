@@ -27,6 +27,25 @@
     return merged;
   };
 
+  // Premiere 2020 (14.x) n'a pas TrackItem.move() : on referme alors les trous avec la suppression
+  // « ripple » native de chaque clip. Vrai si move() est absent sur les clips de la séquence.
+  P.noMove = function (seq) {
+    var tracks = P.allTracks(seq);
+    for (var k = 0; k < tracks.length; k++)
+      if (tracks[k].track.clips.numItems) return typeof tracks[k].track.clips[0].move !== 'function';
+    return false;
+  };
+
+  // Début du premier clip de chaque piste situé après t (témoin du décalage). { "V1": 12.3, ... }
+  P.witnesses = function (seq, t, sel) {
+    var after = P.clipsInRange(seq, t - 1e-4, 1e12, sel, 'inside'), w = {};
+    for (var i = 0; i < after.length; i++) {
+      var s = after[i].clip.start.seconds;
+      if (w[after[i].label] === undefined || s < w[after[i].label]) w[after[i].label] = s;
+    }
+    return w;
+  };
+
   // Retire une plage sur les pistes sel. Renvoie { removed[], shifted } ; lance une erreur si un décalage échoue.
   P.removeRange = function (seq, qs, range, sel, ripple) {
     var len = range.end - range.start, eps = 1e-4;
@@ -35,6 +54,7 @@
     var inside = P.clipsInRange(seq, range.start, range.end, sel, 'inside');
     // Du dernier au premier : les index des clips précédents ne bougent pas.
     inside.sort(function (x, y) { return y.clip.start.seconds - x.clip.start.seconds; });
+    if (ripple && P.noMove(seq)) return P.removeRangeNative(seq, range, sel, inside);
     var removed = [];
     for (var i = 0; i < inside.length; i++) {
       var c = inside[i];
@@ -57,6 +77,36 @@
       }
     }
     return { start: range.start, end: range.end, duration: U.round(len, 4), removed: removed, shifted: shifted };
+  };
+
+  // Variante sans move() (Premiere 2020) : suppression ripple native, clip par clip, puis contrôle.
+  // La suppression ripple d'un clip referme exactement sa durée sur sa piste : chaque piste qui a du
+  // contenu après la plage doit donc être entièrement couverte par ses clips dans la plage (pas de trou),
+  // sinon elle ne reculerait pas d'autant et se désynchroniserait. On le vérifie avant de toucher à quoi que ce soit.
+  P.removeRangeNative = function (seq, range, sel, inside) {
+    var len = range.end - range.start, tol = P.frameTicks(seq) / ADOBE_MCP.TICKS_PER_SECOND * 0.6;
+    var before = P.witnesses(seq, range.end, sel), couvert = {}, label, i;
+    for (i = 0; i < inside.length; i++) couvert[inside[i].label] = (couvert[inside[i].label] || 0) + inside[i].clip.end.seconds - inside[i].clip.start.seconds;
+    for (label in before) {
+      if (Math.abs((couvert[label] || 0) - len) > tol)
+        throw ADOBE_MCP.err('UNSUPPORTED', 'Piste ' + label + ' : trou dans la plage ' + U.round(range.start, 3) + '–' + U.round(range.end, 3) +
+          ' s. Sans TrackItem.move() (Premiere 2020), elle ne peut pas être refermée sans désynchroniser les pistes. Combler le trou ou limiter tracks.');
+    }
+    var removed = [];
+    for (i = 0; i < inside.length; i++) {
+      var c = inside[i];
+      var desc = { track: c.label, name: String(c.clip.name), start: P.timeSec(c.clip.start), end: P.timeSec(c.clip.end) };
+      if (safe(function () { return c.clip.remove(true, true); }, false) === false) throw ADOBE_MCP.err('REMOVE_FAILED', 'Suppression refusée : ' + desc.track + ' ' + desc.name + ' (' + desc.start + '–' + desc.end + ' s)');
+      removed.push(desc);
+    }
+    // Contrôle : chaque piste a reculé d'exactement len (sinon : désynchronisation, à annuler par ppro_rewind).
+    var now = P.witnesses(seq, range.start, sel), ecarts = [];
+    for (label in before) {
+      var recul = before[label] - (now[label] === undefined ? before[label] : now[label]);
+      if (Math.abs(recul - len) > tol) ecarts.push(label + ' a reculé de ' + U.round(recul, 3) + ' s au lieu de ' + U.round(len, 3) + ' s');
+    }
+    if (ecarts.length) throw ADOBE_MCP.err('DESYNC', 'Pistes désynchronisées après la plage ' + U.round(range.start, 3) + ' s : ' + ecarts.join(' ; ') + '. Annuler avec ppro_rewind.');
+    return { start: range.start, end: range.end, duration: U.round(len, 4), removed: removed, shifted: 0, method: 'ripple-natif' };
   };
 
   F['edit.removeRanges'] = function (a) {
