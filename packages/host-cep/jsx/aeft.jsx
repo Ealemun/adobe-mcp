@@ -118,6 +118,14 @@
     }
     return cur;
   }
+  // Une valeur ne s'écrit que sur une propriété feuille, pas sur un groupe (Masks, Effects, Transform…).
+  function requireLeaf(prop, path) {
+    if (prop.propertyType !== PropertyType.PROPERTY) {
+      var names = [];
+      for (var i = 1; i <= prop.numProperties && i <= 30; i++) names.push(String(prop.property(i).name));
+      throw ADOBE_MCP.err('NOT_A_PROPERTY', '« ' + path + ' » est un groupe, pas une propriété : préciser un sous-élément (' + names.join(', ') + ')');
+    }
+  }
   function valueOut(v) {
     if (v && typeof v === 'object' && v.text !== undefined) return String(v.text); // TextDocument
     return v;
@@ -417,6 +425,7 @@
   F['property.set'] = function (a) {
     return undoable('set property', function () {
       var c = findComp(a.compId), l = findLayer(c, a.layerId), prop = resolveProperty(l, a.path), v = a.value;
+      requireLeaf(prop, a.path);
       if (prop.propertyValueType === PropertyValueType.COLOR && v instanceof Array) { var cc = colorIn(v); v = [cc[0], cc[1], cc[2], v.length > 3 ? Number(v[3]) : 1]; }
       if (a.at !== undefined && a.at !== null) prop.setValueAtTime(Number(a.at), v); else { if (prop.numKeys) throw ADOBE_MCP.err('HAS_KEYFRAMES', 'La propriété a des images-clés : donner at, ou aeft_clear_keyframes avant'); prop.setValue(v); }
       return propInfo(prop, true);
@@ -425,6 +434,7 @@
   F['property.setKeyframes'] = function (a) {
     return undoable('set keyframes', function () {
       var c = findComp(a.compId), l = findLayer(c, a.layerId), prop = resolveProperty(l, a.path);
+      requireLeaf(prop, a.path);
       if (!prop.canVaryOverTime) throw ADOBE_MCP.err('UNSUPPORTED', 'Propriété non animable : ' + prop.name);
       if (a.replace !== false) while (prop.numKeys) prop.removeKey(1);
       var kfs = a.keyframes, written = [];
@@ -476,6 +486,7 @@
   F['property.setExpression'] = function (a) {
     return undoable('set expression', function () {
       var c = findComp(a.compId), l = findLayer(c, a.layerId), prop = resolveProperty(l, a.path);
+      requireLeaf(prop, a.path);
       if (!prop.canSetExpression) throw ADOBE_MCP.err('UNSUPPORTED', 'Pas d\'expression possible sur ' + prop.name);
       prop.expression = String(a.expression === undefined ? '' : a.expression);
       if (a.enabled !== undefined) prop.expressionEnabled = a.enabled === true;

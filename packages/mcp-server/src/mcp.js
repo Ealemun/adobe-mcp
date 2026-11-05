@@ -46,7 +46,11 @@ export class McpServer {
           const tool = this.tools.get(params.name);
           if (!tool) return fail(-32602, `Tool inconnu : ${params.name}`);
           try {
-            const result = await tool.handler(params.arguments ?? {});
+            // Validation des arguments contre le schéma du tool : erreur lisible plutôt qu'un plantage côté Adobe.
+            const args = params.arguments ?? {};
+            const problems = validateArgs(tool.inputSchema, args, '');
+            if (problems.length) return reply({ content: [{ type: 'text', text: `BAD_ARGS: ${problems.join(' ; ')}\nParamètres attendus : ${Object.keys(tool.inputSchema.properties ?? {}).join(', ')}` }], isError: true });
+            const result = await tool.handler(args);
             return reply(result);
           } catch (e) {
             // Erreur d'exécution d'un tool : renvoyée comme résultat isError (le client la montre au modèle)
@@ -82,6 +86,49 @@ export class McpServer {
     });
     rl.on('close', () => process.exit(0));
   }
+}
+
+/** Validation JSON Schema minimale (type, required, additionalProperties, enum, bornes, items, anyOf). Convertit nombre→chaîne quand une chaîne est attendue. */
+export function validateArgs(schema, value, path) {
+  const out = [];
+  if (!schema || typeof schema !== 'object' || !Object.keys(schema).length) return out;
+  const label = path || 'arguments';
+  if (schema.anyOf) {
+    const ok = schema.anyOf.some((s) => validateArgs(s, value, path).length === 0);
+    if (!ok) out.push(`${label} : valeur invalide`);
+    return out;
+  }
+  const types = schema.type ? [].concat(schema.type) : null;
+  const jsType = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+  if (types) {
+    const matches = types.some((t) => t === jsType || (t === 'integer' && jsType === 'number' && Number.isInteger(value)));
+    if (!matches) {
+      if (types.includes('string') && jsType === 'number') return out; // converti par l'appelant (coerce)
+      out.push(`${label} : attendu ${types.join('|')}, reçu ${jsType}`);
+      return out;
+    }
+  }
+  if (schema.enum && !schema.enum.includes(value)) out.push(`${label} : valeurs possibles ${schema.enum.join(', ')}`);
+  if (jsType === 'number') {
+    if (schema.minimum !== undefined && value < schema.minimum) out.push(`${label} : minimum ${schema.minimum}`);
+    if (schema.maximum !== undefined && value > schema.maximum) out.push(`${label} : maximum ${schema.maximum}`);
+    if (schema.exclusiveMinimum !== undefined && value <= schema.exclusiveMinimum) out.push(`${label} : doit être > ${schema.exclusiveMinimum}`);
+  }
+  if (jsType === 'array') {
+    if (schema.minItems !== undefined && value.length < schema.minItems) out.push(`${label} : au moins ${schema.minItems} élément(s)`);
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) out.push(`${label} : au plus ${schema.maxItems} élément(s)`);
+    if (schema.items) value.forEach((v, i) => { out.push(...validateArgs(schema.items, v, `${label}[${i}]`)); if (schema.items.type === 'string' && typeof v === 'number') value[i] = String(v); });
+  }
+  if (jsType === 'object' && schema.properties) {
+    for (const k of schema.required ?? []) if (value[k] === undefined) out.push(`${path ? path + '.' : ''}${k} manquant`);
+    for (const [k, v] of Object.entries(value)) {
+      const sub = schema.properties[k];
+      if (!sub) { if (schema.additionalProperties === false) out.push(`paramètre inconnu « ${k} »`); continue; }
+      out.push(...validateArgs(sub, v, path ? `${path}.${k}` : k));
+      if (sub.type === 'string' && typeof v === 'number') value[k] = String(v);
+    }
+  }
+  return out;
 }
 
 export function formatError(e) {

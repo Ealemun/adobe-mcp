@@ -99,6 +99,9 @@ try {
   const stt = JSON.parse((await callTool('media_transcribe_status', {})).content[0].text);
   check('media_transcribe_status', 'engine' in stt, stt.engine || 'aucun moteur');
 
+  const badArgs = await callTool('aeft_delete_layers', { compId: 1, layers: [1] });
+  check('validation des arguments', badArgs.isError && /layerIds manquant/.test(badArgs.content[0].text) && /inconnu « layers »/.test(badArgs.content[0].text));
+
   const res = await rpc('resources/read', { uri: 'adobe://ppro/active-sequence' });
   check('resources/read', res.result?.contents?.[0]?.text?.includes('Montage test'));
 
