@@ -20,11 +20,11 @@
   var ALIASES = {
     'motion': ['trajectoire'], 'opacity': ['opacite'], 'position': [], 'scale': ['echelle'], 'rotation': [], 'anchorpoint': ['pointdancrage'],
     'uniformscale': ['echelleuniforme'], 'volume': [], 'level': ['niveau'],
-    'lumetricolor': ['couleurlumetri', 'lumetri'], 'gaussianblur': ['flougaussien'], 'warpstabilizer': ['stabilisateurdedeformation'],
+    'lumetricolor': ['couleurlumetri', 'lumetri'], 'leavecolor': ['conserverlacouleur', 'conserverunecouleur', 'gardercouleur'], 'tint': ['teinte'], 'blackwhite': ['noiretblanc'], 'gaussianblur': ['flougaussien'], 'warpstabilizer': ['stabilisateurdedeformation'],
     'crossdissolve': ['fonduenchaine'], 'dipto black': ['fondu au noir'], 'diptoblack': ['plongeeaunoir', 'fonduaunoir'], 'diptowhite': ['plongeeaublanc'],
     'constantpower': ['puissanceconstante'], 'morphcut': [], 'directionalblur': ['floudirectionnel'], 'transform': ['transformation'],
     'exposure': ['exposition'], 'contrast': ['contraste'], 'highlights': ['hauteslumieres', 'tonsclairs'], 'shadows': ['tonsfonces', 'ombres'],
-    'whites': ['blancs'], 'blacks': ['noirs'], 'temperature': [], 'tint': ['teinte'], 'saturation': [], 'vibrance': [], 'sharpen': ['nettete'],
+    'whites': ['blancs'], 'blacks': ['noirs'], 'temperature': [], 'saturation': [], 'vibrance': [], 'sharpen': ['nettete'],
     'blurriness': ['flou'], 'intensity': ['intensite'], 'fadedfilm': ['filmdelave'], 'amount': ['quantite']
   };
   function sameName(a, b) {
@@ -110,20 +110,28 @@
     prop.setValue(value, true);
   }
 
-  // Élément QE correspondant à un clip DOM (même piste, même début en ticks).
+  // Élément QE correspondant à un clip DOM. Trois essais : même début en ticks ; sinon le n-ième élément non vide
+  // de la piste QE (les pistes QE contiennent aussi les vides entre clips) ; sinon même nom et début à une image près.
   function qeItemFor(seq, found) {
     var qs = P.qeSequence(seq);
     var qt = found.trackInfo.kind === 'video' ? qs.getVideoTrackAt(found.trackInfo.index) : qs.getAudioTrackAt(found.trackInfo.index);
     if (!qt) throw ADOBE_MCP.err('QE_ERROR', 'Piste QE introuvable : ' + found.label);
-    var startTicks = String(found.clip.start.ticks), n = safe(function () { return qt.numItems; }, 0);
-    for (var i = 0; i < n; i++) {
-      var it = qt.getItemAt(i);
-      if (!it) continue;
-      var t = safe(function () { return String(it.start.ticks); }, '');
-      if (t === startTicks && safe(function () { return String(it.type); }, 'Clip') !== 'Empty') return it;
+    var startTicks = String(found.clip.start.ticks), n = safe(function () { return qt.numItems; }, 0), items = [], i;
+    for (i = 0; i < n; i++) {
+      var it = safe(function () { return qt.getItemAt(i); }, null);
+      if (it && safe(function () { return String(it.type); }, 'Clip') !== 'Empty') items.push(it);
     }
-    throw ADOBE_MCP.err('QE_ERROR', 'Clip QE introuvable pour ' + found.label + '/' + found.index);
+    for (i = 0; i < items.length; i++) if (safe(function () { return String(items[i].start.ticks); }, '') === startTicks) return items[i];
+    if (items.length === found.trackInfo.track.clips.numItems && items[found.index]) return items[found.index];
+    var fps = P.seqFps(seq) || 30;
+    for (i = 0; i < items.length; i++) {
+      var secs = safe(function () { return Number(items[i].start.secs); }, NaN);
+      if (String(items[i].name) === String(found.clip.name) && (isNaN(secs) || Math.abs(secs - found.clip.start.seconds) < 1 / fps)) return items[i];
+    }
+    throw ADOBE_MCP.err('QE_ERROR', 'Clip QE introuvable pour ' + found.label + '/' + found.index + ' (' + items.length + ' éléments QE, ' + found.trackInfo.track.clips.numItems + ' clips)');
   }
+  P.qeItemFor = qeItemFor;
+
   // Effet QE par nom (tolérant aux noms localisés).
   function qeEffectByName(name, kind) {
     var fnName = kind === 'audio' ? 'getAudioEffectByName' : 'getVideoEffectByName';
@@ -174,9 +182,13 @@
       var existing = findComponent(f.clip, a.effect);
       if (!existing || a.allowDuplicate === true) {
         var it = qeItemFor(seq, f), fx = qeEffectByName(a.effect, kind);
-        var ok = safe(function () { return kind === 'audio' ? it.addAudioEffect(fx) : it.addVideoEffect(fx); }, false);
-        if (ok === false) throw ADOBE_MCP.err('EFFECT_FAILED', 'Ajout de l\'effet refusé sur ' + f.label + '/' + f.index);
-        existing = findComponent(f.clip, a.effect) || f.clip.components[f.clip.components.numItems - 1];
+        // addVideoEffect ne renvoie rien d'exploitable : on juge sur le nombre d'effets du clip avant/après.
+        var before = f.clip.components.numItems, err = null;
+        try { if (kind === 'audio') it.addAudioEffect(fx); else it.addVideoEffect(fx); } catch (e) { err = e; }
+        var clip = P.findClip(seq, f.label + '/' + f.index).clip; // relecture : l'objet DOM peut être périmé
+        if (clip.components.numItems <= before) throw ADOBE_MCP.err('EFFECT_FAILED', 'Premiere n\'a pas ajouté « ' + a.effect + ' » sur ' + f.label + '/' + f.index + (err ? ' : ' + err.message : ''));
+        f.clip = clip;
+        existing = clip.components[clip.components.numItems - 1];
       }
       var set = {};
       if (a.params) for (var k in a.params) if (a.params.hasOwnProperty(k)) { setParamValue(requireParam(existing, k), a.params[k]); set[k] = paramValue(requireParam(existing, k)); }
@@ -185,12 +197,60 @@
     return { applied: applied };
   };
 
+  // Retire un effet. Premiere 2020 n'a pas Component.remove() : on essaie aussi les fonctions QE
+  // (composant QE par index, puis removeEffects + remise des autres effets avec leurs réglages). Chaque voie est vérifiée.
+  var FIXED = /^(motion|trajectoire|opacity|opacite|volume|channelvolume|volumedecanal|panner|balance|timeremapping|remappagetemporel)$/;
   F['effects.remove'] = function (a) {
     var seq = P.requireSequence(a.sequenceId), f = P.findClip(seq, a.clipId);
-    var comp = requireComponent(f.clip, a.effect), name = String(comp.displayName);
-    if (typeof comp.remove !== 'function') throw ADOBE_MCP.err('UNSUPPORTED', 'Suppression d\'effet indisponible sur cette version (supprimer dans Options d\'effet)');
-    comp.remove();
-    return { removed: name, remaining: f.clip.components.numItems };
+    var comp = requireComponent(f.clip, a.effect), name = String(comp.displayName), idx = -1, i;
+    if (FIXED.test(norm(name))) throw ADOBE_MCP.err('BAD_ARGS', '« ' + name + ' » est un effet fixe du clip : le remettre à zéro avec ppro_set_effect_params au lieu de le retirer');
+    for (i = 0; i < f.clip.components.numItems; i++) if (f.clip.components[i] === comp || String(f.clip.components[i].displayName) === name) { idx = i; break; }
+    var before = f.clip.components.numItems, tried = [];
+    function count() { return P.findClip(seq, f.label + '/' + f.index).clip.components.numItems; }
+    function done(how) { return { removed: name, method: how, remaining: count() }; }
+    // 1) API DOM (versions récentes)
+    if (typeof comp.remove === 'function') { tried.push('Component.remove'); safe(function () { comp.remove(); }); if (count() < before) return done('Component.remove'); }
+    // 2) composant QE à l'index correspondant
+    var it = safe(function () { return qeItemFor(seq, f); }, null);
+    if (it && typeof it.getComponentAt === 'function') {
+      var qc = safe(function () { return it.getComponentAt(idx); }, null);
+      if (qc && typeof qc.remove === 'function') { tried.push('QE getComponentAt(i).remove'); safe(function () { qc.remove(); }); if (count() < before) return done('QE component.remove'); }
+    }
+    if (it && typeof it.removeEffect === 'function') { tried.push('QE removeEffect'); safe(function () { it.removeEffect(idx); }); if (count() < before) return done('QE removeEffect'); }
+    // 3) tout retirer puis remettre les autres effets (réglages fixes recopiés ; images-clés non recopiées)
+    if (it && typeof it.removeEffects === 'function' && a.allowRebuild !== false) {
+      tried.push('QE removeEffects + remise');
+      var keep = [];
+      for (i = 0; i < f.clip.components.numItems; i++) {
+        var c = f.clip.components[i], cn = String(c.displayName);
+        if (i === idx || FIXED.test(norm(cn))) continue;
+        var vals = {}, animated = false;
+        for (var j = 0; j < c.properties.numItems; j++) {
+          var pr = c.properties[j];
+          if (safe(function () { return pr.isTimeVarying(); }, false)) animated = true;
+          var v = paramValue(pr);
+          if (v !== null && v !== undefined && typeof v !== 'object') vals[String(pr.displayName)] = v;
+          else if (v instanceof Array) vals[String(pr.displayName)] = v;
+        }
+        keep.push({ name: cn, params: vals, animated: animated });
+      }
+      safe(function () { it.removeEffects(); });
+      if (count() < before) {
+        var restored = [], lost = [];
+        for (i = 0; i < keep.length; i++) {
+          try {
+            F['effects.apply']({ clipIds: [f.label + '/' + f.index], effect: keep[i].name, allowDuplicate: true, sequenceId: a.sequenceId });
+            var cc = P.findClip(seq, f.label + '/' + f.index).clip, last = cc.components[cc.components.numItems - 1];
+            for (var k in keep[i].params) if (keep[i].params.hasOwnProperty(k)) { var target = findParam(last, k); if (target) safe(function () { setParamValue(target, keep[i].params[k]); }); }
+            restored.push(keep[i].name + (keep[i].animated ? ' (images-clés à refaire)' : ''));
+          } catch (e) { lost.push(keep[i].name); }
+        }
+        var r = done('QE removeEffects + remise');
+        r.restored = restored; if (lost.length) r.lost = lost;
+        return r;
+      }
+    }
+    throw ADOBE_MCP.err('UNSUPPORTED', 'Impossible de retirer « ' + name + ' » sur cette version (essais : ' + (tried.join(', ') || 'aucune fonction disponible') + '). Le retirer dans Options d\'effet (clic sur l\'effet, Suppr) ; en attendant, ppro_set_effect_params peut le neutraliser.');
   };
 
   // Valeurs fixes ou image-clé (at = secondes de séquence) sur un effet existant.

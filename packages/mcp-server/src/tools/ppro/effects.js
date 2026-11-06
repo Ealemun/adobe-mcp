@@ -33,8 +33,8 @@ export function registerEffectTools(ctx) {
 
   tool({
     name: 'ppro_remove_effect', title: 'Retirer un effet', annotations: WRITE,
-    description: 'Retire un effet d\'un clip (pas les effets fixes Trajectoire/Opacité/Volume).',
-    input: { required: ['clipId', 'effect'], properties: { clipId: CLIP_ID, effect: EFFECT, sequenceId: SEQ_ID } },
+    description: 'Retire un effet d\'un clip (pas les effets fixes Trajectoire/Opacité/Volume). Sur Premiere 2020, si aucune fonction directe n\'existe, retire tous les effets puis remet les autres avec leurs réglages fixes (allowRebuild, défaut true ; leurs images-clés sont à refaire : le résultat les signale).',
+    input: { required: ['clipId', 'effect'], properties: { clipId: CLIP_ID, effect: EFFECT, allowRebuild: { type: 'boolean', default: true }, sequenceId: SEQ_ID } },
     handler: async (a) => text(await call('effects.remove', a))
   });
 

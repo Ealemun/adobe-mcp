@@ -76,6 +76,22 @@ export function registerAeftTools(server, bridge) {
     handler: async (a) => text(await call('comp.duplicate', a))
   });
 
+  tool({
+    name: 'aeft_duplicate_comp', title: 'Dupliquer une composition',
+    description: 'Duplique une composition (gabarit) count fois, avec des noms (names[] ou name + numéro). deep=true duplique aussi les précompositions imbriquées et rebranche les copies : chaque copie devient indépendante (indispensable pour décliner un gabarit dont les plans sont dans des précomps). Ensuite : aeft_replace_layer_source / aeft_set_text sur chaque copie.',
+    input: { properties: { compId: COMP_ID, count: { type: 'integer', minimum: 1, maximum: 100, default: 1 }, name: { type: 'string' }, names: { type: 'array', items: { type: 'string' } }, deep: { type: 'boolean', default: false }, folder: { type: 'string' } } },
+    handler: async (a) => text(await call('comp.duplicate', a, { timeoutMs: 300000 }))
+  });
+  tool({
+    name: 'aeft_replace_layer_source', title: 'Remplacer la source d\'un calque',
+    description: 'Remplace le métrage / la composition d\'un calque par un autre élément du projet (itemId) ou par un fichier (path, importé si besoin), en gardant position, effets, masques et images-clés du calque. C\'est ainsi qu\'on remplit un gabarit (plan A / plan B…). startTime optionnel pour caler le nouveau métrage.',
+    input: { required: ['layerId'], properties: { compId: COMP_ID, layerId: LAYER_ID, itemId: { type: 'string', description: 'id ou nom de l\'élément de projet.' }, path: { type: 'string', description: 'Fichier à utiliser (importé s\'il n\'est pas déjà dans le projet).' }, folder: { type: 'string' }, startTime: { type: 'number' }, fixExpressions: { type: 'boolean', default: true } } },
+    handler: async (a) => {
+      if (!a.itemId && !a.path) throw Object.assign(new Error('itemId ou path requis'), { code: 'BAD_ARGS' });
+      return text(await call('layer.replaceSource', a, { timeoutMs: 120000 }));
+    }
+  });
+
   const LAYER_ATTRS = { name: { type: 'string' }, startTime: { type: 'number' }, inPoint: { type: 'number' }, outPoint: { type: 'number' }, enabled: { type: 'boolean' }, solo: { type: 'boolean' }, shy: { type: 'boolean' }, locked: { type: 'boolean' }, is3D: { type: 'boolean' }, motionBlur: { type: 'boolean' }, label: { type: 'integer', minimum: 0, maximum: 16 }, parent: { type: ['string', 'null'], description: 'Calque parent (index/nom), null pour détacher.' }, blendMode: { type: 'string', description: 'NORMAL, MULTIPLY, SCREEN, ADD, OVERLAY, SILHOUETE_ALPHA, STENCIL_ALPHA…' }, trackMatte: { type: 'object', additionalProperties: false, properties: { type: { type: 'string', enum: ['ALPHA', 'ALPHA_INVERTED', 'LUMA', 'LUMA_INVERTED', 'NO_TRACK_MATTE'] }, layer: { type: 'string' } } }, index: { type: 'integer', minimum: 1, description: 'Position dans la pile (1 = en haut).' } };
   tool({
     name: 'aeft_add_layer', title: 'Ajouter un calque',
@@ -157,7 +173,7 @@ export function registerAeftTools(server, bridge) {
   tool({ name: 'aeft_list_effects', title: 'Effets AE disponibles', annotations: readOnly, description: 'Effets installés (nom affiché, matchName, catégorie). search = expression régulière.', input: { properties: { search: { type: 'string' }, limit: { type: 'integer', default: 300 } } }, handler: async (a) => text(await call('effects.list', a)) });
   tool({
     name: 'aeft_apply_effect', title: 'Appliquer un effet AE',
-    description: 'Ajoute un effet (matchName "ADBE Gaussian Blur 2" ou nom affiché) à des calques et règle ses paramètres {nom: valeur}.',
+    description: 'Ajoute un effet à des calques et règle ses paramètres {nom: valeur}. Nom accepté : matchName ("ADBE Leave Color"), nom anglais ou français courant ("Leave Color", "Conserver la couleur", "Lumetri", "Teinte", "Déplacement turbulent", "Keylight"…), ou nom affiché exact ; en cas de doute, l\'erreur liste les candidats.',
     input: { required: ['layerIds', 'effect'], properties: { compId: COMP_ID, layerIds: LAYER_IDS, effect: { type: 'string' }, name: { type: 'string' }, params: { type: 'object', additionalProperties: true } } },
     handler: async (a) => text(await call('effects.apply', a))
   });

@@ -262,11 +262,57 @@
       return compInfo(c);
     });
   };
+  // Duplique une composition `count` fois. deep=true duplique aussi les précompositions utilisées par ses calques
+  // (récursivement) et rebranche les copies : chaque copie est alors indépendante (gabarit à décliner).
+  function deepDuplicate(c, suffix, map) {
+    var d = c.duplicate();
+    d.name = String(c.name) + suffix;
+    for (var i = 1; i <= d.numLayers; i++) {
+      var l = d.layer(i);
+      if (l instanceof AVLayer && l.source instanceof CompItem) {
+        var src = l.source, key = String(src.id);
+        if (!map[key]) map[key] = deepDuplicate(src, suffix, map);
+        l.replaceSource(map[key], false);
+      }
+    }
+    return d;
+  }
   F['comp.duplicate'] = function (a) {
     return undoable('duplicate comp', function () {
-      var c = findComp(a.compId), d = c.duplicate();
-      d.name = String(a.name || (c.name + ' copie'));
-      return compInfo(d);
+      var c = findComp(a.compId), n = Math.max(1, Math.min(100, Number(a.count || 1))), out = [];
+      var folder = a.folder ? ensureFolder(a.folder) : null;
+      for (var i = 0; i < n; i++) {
+        var name = a.names && a.names[i] ? String(a.names[i]) : String(a.name || (c.name + ' copie')) + (n > 1 && !(a.names && a.names[i]) ? ' ' + (i + 1) : '');
+        var d;
+        if (a.deep === true) { d = deepDuplicate(c, ' [' + (i + 1) + ']', {}); }
+        else d = c.duplicate();
+        d.name = name;
+        if (folder) d.parentFolder = folder;
+        out.push(compInfo(d));
+      }
+      return { source: String(c.name), deep: a.deep === true, created: out };
+    });
+  };
+
+  // Remplace la source d'un calque (métrage, solide ou composition) par un autre élément du projet,
+  // en gardant transformations, effets, masques et images-clés du calque.
+  F['layer.replaceSource'] = function (a) {
+    return undoable('replace source', function () {
+      var c = findComp(a.compId), l = findLayer(c, a.layerId);
+      if (!(l instanceof AVLayer)) throw ADOBE_MCP.err('BAD_ARGS', 'Calque sans source (texte, forme, caméra, lumière) : impossible de remplacer');
+      var item = a.path ? null : findItem(a.itemId);
+      if (a.path) {
+        var f = new File(a.path);
+        if (!f.exists) throw ADOBE_MCP.err('FILE_NOT_FOUND', 'Fichier introuvable : ' + a.path);
+        var p = requireProject();
+        for (var i = 1; i <= p.numItems && !item; i++) { var it = p.item(i); if (it instanceof FootageItem && safe(function () { return String(it.file.fsName) === String(f.fsName); }, false)) item = it; }
+        if (!item) { item = p.importFile(new ImportOptions(f)); if (a.folder) item.parentFolder = ensureFolder(a.folder); }
+      }
+      if (item instanceof FolderItem) throw ADOBE_MCP.err('BAD_ARGS', 'Un dossier ne peut pas servir de source');
+      var old = l.source ? String(l.source.name) : null;
+      l.replaceSource(item, a.fixExpressions !== false);
+      if (a.startTime !== undefined) l.startTime = Number(a.startTime);
+      return { layer: String(l.name), oldSource: old, newSource: String(item.name), info: layerInfo(l, l.index) };
     });
   };
 
@@ -529,19 +575,38 @@
     }
     return { count: out.length, effects: out.slice(0, Number(a.limit || 300)) };
   };
+  // Noms courants (anglais / français) → matchName, valables quelle que soit la langue d'After Effects.
+  var FX = { 'leave color': 'ADBE Leave Color', 'conserver la couleur': 'ADBE Leave Color', 'lumetri color': 'ADBE Lumetri', lumetri: 'ADBE Lumetri', 'couleur lumetri': 'ADBE Lumetri',
+    'gaussian blur': 'ADBE Gaussian Blur 2', 'flou gaussien': 'ADBE Gaussian Blur 2', tint: 'ADBE Tint', teinte: 'ADBE Tint', 'black & white': 'ADBE Black&White', 'noir et blanc': 'ADBE Black&White',
+    'hue/saturation': 'ADBE HUE SATURATION', 'teinte/saturation': 'ADBE HUE SATURATION', curves: 'ADBE CurvesCustom', courbes: 'ADBE CurvesCustom', levels: 'ADBE Easy Levels2', niveaux: 'ADBE Easy Levels2',
+    glow: 'ADBE Glo2', 'lueur diffuse': 'ADBE Glo2', 'turbulent displace': 'ADBE Turbulent Displace', 'déplacement turbulent': 'ADBE Turbulent Displace', 'deplacement turbulent': 'ADBE Turbulent Displace',
+    'directional blur': 'ADBE Motion Blur', 'flou directionnel': 'ADBE Motion Blur', fill: 'ADBE Fill', fond: 'ADBE Fill', remplir: 'ADBE Fill', 'drop shadow': 'ADBE Drop Shadow', 'ombre portée': 'ADBE Drop Shadow',
+    'fast box blur': 'ADBE Box Blur2', 'flou rapide': 'ADBE Box Blur2', 'camera lens blur': 'ADBE Camera Lens Blur', 'channel blur': 'ADBE Channel Blur', 'flou de couche': 'ADBE Channel Blur',
+    'venetian blinds': 'ADBE Venetian Blinds', 'linear wipe': 'ADBE Linear Wipe', 'balayage linéaire': 'ADBE Linear Wipe', 'radial wipe': 'ADBE Radial Wipe', 'mosaic': 'ADBE Mosaic', 'mosaïque': 'ADBE Mosaic',
+    'transform': 'ADBE Geometry2', transformation: 'ADBE Geometry2', 'motion tile': 'ADBE Tile', 'répétition de mouvement': 'ADBE Tile', 'set matte': 'ADBE Set Matte3', 'définir un cache': 'ADBE Set Matte3',
+    'keylight': 'Keylight 906', 'keylight (1.2)': 'Keylight 906', 'warp stabilizer': 'VISTABILIZE', 'stabilisateur de déformation': 'VISTABILIZE', 'posterize time': 'ADBE Posterize Time', 'postérisation temporelle': 'ADBE Posterize Time',
+    'invert': 'ADBE Invert', inverser: 'ADBE Invert', 'brightness & contrast': 'ADBE Brightness & Contrast 2', 'luminosité et contraste': 'ADBE Brightness & Contrast 2', 'noise': 'ADBE Noise', bruit: 'ADBE Noise',
+    'change to color': 'ADBE Change To Color', 'changer de couleur': 'ADBE Change To Color', 'colorama': 'APC Colorama' };
+  // Résout un nom d'effet : matchName direct, table ci-dessus, nom affiché exact, puis nom affiché contenant le texte.
+  function resolveEffect(fx, name) {
+    var raw = String(name), low = raw.toLowerCase(), k;
+    if (fx.canAddProperty(raw)) return raw;
+    if (FX[low] && fx.canAddProperty(FX[low])) return FX[low];
+    for (k = 0; k < app.effects.length; k++) if (String(app.effects[k].displayName).toLowerCase() === low && fx.canAddProperty(String(app.effects[k].matchName))) return String(app.effects[k].matchName);
+    var hits = [];
+    for (k = 0; k < app.effects.length; k++) if (String(app.effects[k].displayName).toLowerCase().indexOf(low) >= 0) hits.push(app.effects[k]);
+    if (hits.length === 1 && fx.canAddProperty(String(hits[0].matchName))) return String(hits[0].matchName);
+    var names = [];
+    for (k = 0; k < hits.length && k < 10; k++) names.push(String(hits[k].displayName) + ' (' + hits[k].matchName + ')');
+    throw ADOBE_MCP.err('EFFECT_NOT_FOUND', 'Effet inconnu ou inapplicable : ' + raw + (names.length ? '. Candidats : ' + names.join(', ') : ' (voir aeft_list_effects, ou donner le matchName)'));
+  }
+
   F['effects.apply'] = function (a) {
     return undoable('apply effect', function () {
       var c = findComp(a.compId), out = [];
       for (var i = 0; i < a.layerIds.length; i++) {
         var l = findLayer(c, a.layerIds[i]), fx = l.property('ADBE Effect Parade');
-        if (!fx.canAddProperty(String(a.effect))) {
-          // nom affiché → matchName
-          var mn = null;
-          for (var k = 0; k < app.effects.length && !mn; k++) if (String(app.effects[k].displayName).toLowerCase() === String(a.effect).toLowerCase()) mn = String(app.effects[k].matchName);
-          if (!mn || !fx.canAddProperty(mn)) throw ADOBE_MCP.err('EFFECT_NOT_FOUND', 'Effet inconnu ou inapplicable : ' + a.effect + ' (voir aeft_list_effects)');
-          a.effect = mn;
-        }
-        var e = fx.addProperty(String(a.effect));
+        var e = fx.addProperty(resolveEffect(fx, a.effect));
         if (a.name) e.name = String(a.name);
         var set = {};
         if (a.params) for (var p in a.params) if (a.params.hasOwnProperty(p)) {

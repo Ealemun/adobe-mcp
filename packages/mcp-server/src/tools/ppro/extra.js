@@ -32,6 +32,20 @@ export function registerExtraTools(ctx) {
   });
 
   tool({
+    name: 'ppro_freeze_frame', title: 'Arrêt sur image', annotations: WRITE,
+    description: 'Gèle l\'image d\'un clip vidéo à l\'instant time pendant `frames` images (défaut 4), sans passer par la vitesse : exporte l\'image, l\'importe (chutier _adobe-mcp/Freeze) et la pose. mode "insert" (défaut) coupe le clip et décale la suite ; "overwrite" remplace la portion. L\'image capture tout ce qui est visible à cet instant.',
+    input: { required: ['clipId', 'time'], properties: { clipId: CLIP_ID, time: { type: 'number', minimum: 0 }, frames: { type: 'integer', minimum: 1, default: 4 }, mode: { type: 'string', enum: ['insert', 'overwrite'], default: 'insert' }, sequenceId: SEQ_ID } },
+    handler: async (a) => text(await call('edit.freezeFrame', a, { timeoutMs: 120000 }))
+  });
+
+  tool({
+    name: 'ppro_inspect_clip', title: 'Diagnostic d\'un clip (API)', annotations: READ_ONLY,
+    description: 'Liste les fonctions que cette version de Premiere expose sur un clip (objets DOM et QE). À utiliser quand une fonction échoue (vitesse, effets, transitions) pour transmettre le résultat au développeur du pont.',
+    input: { required: ['clipId'], properties: { clipId: CLIP_ID, sequenceId: SEQ_ID } },
+    handler: async (a) => text(await call('debug.inspectClip', a))
+  });
+
+  tool({
     name: 'ppro_place_sfx', title: 'Placer des sons', annotations: WRITE,
     description: 'Importe et pose des effets sonores : items[{path, time, track?, gainDb?}] (piste audio A3 par défaut, gain en dB appliqué au clip).',
     input: { required: ['items'], properties: { items: { type: 'array', minItems: 1, items: { type: 'object', required: ['path', 'time'], additionalProperties: false, properties: { path: { type: 'string' }, time: { type: 'number', minimum: 0 }, track: { type: 'string', pattern: '^[Aa][0-9]+$' }, gainDb: { type: 'number' } } } }, track: { type: 'string', pattern: '^[Aa][0-9]+$', default: 'A3' }, gainDb: { type: 'number' }, bin: { type: 'string' }, sequenceId: SEQ_ID } },

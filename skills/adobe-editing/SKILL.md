@@ -27,9 +27,11 @@ Chaque skill de domaine marque les outils `[existant]` ou `[prévu]` : n'annonce
 ## Ce que le pont sait faire (résumé)
 
 - **Lecture** : projet, chutiers et médias (`ppro_list_items`), séquences, timeline (`ppro_get_sequence`, avec `range`/`tracks`), séquence active et sélection (`ppro_get_active_sequence`), effets et images-clés d'un clip (`ppro_get_clip_effects`), marqueurs, presets d'export, infos audio.
+- **Arrêt sur image** : `ppro_freeze_frame {clipId, time, frames}` (sans passer par la vitesse).
 - **Montage** : coupes à l'image près (`ppro_cut_at`), suppression/conservation de plages avec fermeture des trous (`ppro_remove_ranges`, `ppro_keep_ranges`), supprimer/désactiver/déplacer/rogner des clips, lier/délier, vitesse, placement de médias (`ppro_insert_clip`, `ppro_place_clips`), sons (`ppro_place_sfx`), pistes, séquences (créer, dupliquer, extraire une plage, Auto Reframe vertical).
 - **Effets** : appliquer et régler n'importe quel effet (`ppro_apply_effect`, `ppro_set_effect_params`), animer (`ppro_set_keyframes`), transformations et punch-in, transitions, Lumetri, Warp Stabilizer, volume et automation, MOGRT (insérer, lire, modifier).
 - **Export et analyse** : image(s) fixe(s), audio WAV (`ppro_export_audio`) puis `media_detect_silences`, `media_loudness`, `media_probe`, planche-contact (`media_contact_sheet`), transcription si un Whisper local est installé (`media_transcribe`, vérifier avec `media_transcribe_status`), rendu d'une plage ou de la séquence (`ppro_export_sequence`, `ppro_export_range`, direct ou Media Encoder).
+- **Gabarits After Effects** : `aeft_duplicate_comp {deep: true}` crée des copies indépendantes d'un gabarit (précomps comprises), puis `aeft_replace_layer_source` remplace les plans (plan A, plan B…) et `aeft_set_text` les textes. Ne jamais abandonner un gabarit parce qu'il faudrait le dupliquer.
 - **After Effects** : comps, calques (solide, texte, forme, nul, calque d'effets, métrage), texte et style, formes avec Trim Paths, propriétés et images-clés avec easing, expressions (tester avant de poser), effets, précomposition, rendu, propriétés essentielles et export MOGRT.
 - **Dynamic Link** : `ppro_replace_with_ae_comp` (équivalent du clic droit « Remplacer par une composition After Effects », les deux panneaux ouverts), `ppro_import_ae_comp`.
 - **Pas encore** : texte Essential Graphics créé de zéro dans Premiere (passer par un MOGRT, ou créer le texte dans After Effects puis Dynamic Link / export MOGRT), calque d'effets créé de zéro (demander à l'utilisateur de le créer puis `ppro_insert_clip`), détection de beats/scènes/visages, séparation de stems, masques et tracking dans AE.
@@ -141,6 +143,6 @@ si la lecture saccade : l'utilisateur fait clic droit > Rendu et remplacement
 - `NO_ACTIVE_SEQUENCE` : `ppro_list_sequences` puis `ppro_set_active_sequence`.
 - `CLIP_NOT_FOUND` : les index ont changé, relire `ppro_get_sequence`.
 - `EFFECT_NOT_FOUND` / `PARAM_NOT_FOUND` : la réponse liste les noms présents ; sinon `ppro_list_effects {search}`.
-- `UNSUPPORTED` : fonction absente de cette version de Premiere/AE → guidage manuel.
+- `UNSUPPORTED` / `SPEED_FAILED` / `EFFECT_FAILED` : fonction absente ou refusée par cette version → lancer `ppro_inspect_clip` sur le clip et donner le résultat à l'utilisateur (pour corriger le pont), puis proposer le guidage manuel ou une alternative (`ppro_freeze_frame` pour un gel).
 - `MOVE_FAILED` lors d'un `ppro_remove_ranges` : proposer `ppro_rewind` puis la variante « désactiver puis supprimer ».
 - Résultat tronqué : relancer avec `range`/`tracks`.
