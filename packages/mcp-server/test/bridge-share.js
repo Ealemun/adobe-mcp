@@ -72,6 +72,16 @@ try {
   check('appel depuis le nouveau relais', r6.version === '14.9.0');
 
   ppro.stop(); aeft.stop(); c.stop(); b.stop();
+  await wait(300);
+
+  // Ancienne version d'adobe-mcp sur le port (refuse hello-peer) : le nouveau serveur doit démarrer quand même.
+  const { startWebSocketServer } = await import('../src/bridge/ws.js');
+  const { writeFileSync } = await import('node:fs');
+  const old = await startWebSocketServer({ port, onConnection: (conn) => conn.on('message', () => { conn.send({ type: 'error', message: 'hello attendu' }); conn.close(1002); }) });
+  writeFileSync(process.env.ADOBE_MCP_BRIDGE_FILE, JSON.stringify({ protocol: 1, port, token: 'ancien', pid: 1 }));
+  const d = await new Bridge({ port, serverVersion: 'test-D' }).start();
+  check('ancienne version sur le port → démarrage seul sur un port libre', d.role === 'leader' && d.port !== port, `port ${d.port}`);
+  d.stop(); old.server.close();
 } catch (e) {
   check('exception', false, e.stack || String(e));
 }

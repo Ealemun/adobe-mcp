@@ -75,10 +75,19 @@
     if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
 
     var bridge = readBridgeFile();
-    var port = manualPort || (bridge && bridge.port) || DEFAULT_PORT;
+    // Le port annoncé par le serveur (bridge.json) est toujours prioritaire : un port tapé à la main ne sert que
+    // tant qu'aucun serveur n'est annoncé, et il est oublié dès qu'un serveur apparaît sur un autre port.
+    if (manualPort && bridge && bridge.port && bridge.port !== manualPort) {
+      log('Port ' + manualPort + ' saisi à la main ignoré : le serveur MCP est sur le port ' + bridge.port + '.', 'muted');
+      manualPort = null;
+    }
+    var port = (bridge && bridge.port) || manualPort || DEFAULT_PORT;
     var token = (bridge && bridge.token) || '';
     $('port').value = port;
-    if (!bridge) log('Serveur MCP non lancé (pas de bridge.json). Lancez votre client MCP. Essai sur le port ' + port + '.', 'muted');
+    if (!bridge) {
+      // Message affiché une seule fois par série d'échecs pour ne pas noyer le journal.
+      if (!quietFail) log('Aucun serveur adobe-mcp en marche. Ouvrez votre client MCP (Claude Code : lancez « claude » ; appli Claude : ouvrez-la) et vérifiez que le serveur « adobe » y est actif. Essai sur le port ' + port + ' toutes les 3 s.', 'muted');
+    }
     else log('Serveur annoncé sur le port ' + port + ' (pid ' + bridge.pid + ', démarré ' + String(bridge.startedAt || '').replace('T', ' ').slice(0, 19) + ')', 'muted');
 
     setStatus('Connexion au serveur MCP (port ' + port + ')…', 'wait');

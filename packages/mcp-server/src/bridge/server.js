@@ -55,9 +55,11 @@ export class Bridge extends EventEmitter {
       catch (e) { if (e.code !== 'EADDRINUSE') throw e; }
       try { await this.#becomePeer(); return; }
       catch (e) {
-        if (e.code === 'NOT_BRIDGE') {
-          // Le port est tenu par un autre programme : on travaille seul sur un port libre (ancien comportement).
-          this.log('bridge.port-foreign', { port: this.requestedPort });
+        if (e.code === 'NOT_BRIDGE' || e.code === 'PEER_REFUSED') {
+          // Le port est tenu par un autre programme, ou par une ancienne version d'adobe-mcp qui ne sait pas
+          // partager le pont : on travaille seul sur un port libre et on l'annonce dans bridge.json.
+          this.log('bridge.port-foreign', { port: this.requestedPort, reason: e.code });
+          process.stderr.write(`[adobe-mcp] le port ${this.requestedPort} est occupé par ${e.code === 'PEER_REFUSED' ? 'une ancienne version d\'adobe-mcp' : 'un autre programme'} : pont ouvert sur un port libre. Fermer les anciennes fenêtres du client MCP pour revenir au port ${this.requestedPort}.\n`);
           await this.#becomeLeader(0);
           return;
         }
@@ -65,7 +67,9 @@ export class Bridge extends EventEmitter {
         await new Promise((r) => setTimeout(r, 300 + Math.random() * 700));
       }
     }
-    throw new BridgeError('BRIDGE_START', `Impossible d'ouvrir ou de rejoindre le pont sur le port ${this.requestedPort}`);
+    // Toujours rien après plusieurs essais : on ne laisse jamais le client MCP sans serveur.
+    this.log('bridge.fallback', { port: this.requestedPort });
+    await this.#becomeLeader(0);
   }
 
   async #becomeLeader(port) {
